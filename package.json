@@ -1,0 +1,20 @@
+{
+  "name": "ai-mock-interviewer",
+  "version": "1.0.0",
+  "description": "AI Mock Interviewer and ATS Checker",
+  "scripts": {
+    "dev": "npm --prefix frontend run dev",
+    "backend": "python backend/main.py",
+    "install-frontend": "npm --prefix frontend install",
+    "install-backend": "pip install -r requirements.txt",
+    "install-all": "npm run install-frontend && npm run install-backend"
+  },
+  "keywords": [
+    "ai",
+    "interview",
+    "ats",
+    "resume"
+  ],
+  "author": "",
+  "license": "ISC"
+}

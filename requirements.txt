@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+python-multipart
+pdfplumber
+spacy
+openai-whisper
+opencv-python
+streamlit
+sentence-transformers
+faster-whisper
+ctranslate2
+pyttsx3

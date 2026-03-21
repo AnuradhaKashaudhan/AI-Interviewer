@@ -1,0 +1,43 @@
+Status Code: 200
+{
+  "message": "Resume processed successfully",
+  "extracted_skills": [
+    "React",
+    "Python",
+    "Fastapi",
+    "Docker",
+    "Machine learning"
+  ],
+  "generated_questions": {
+    "hr_questions": [
+      "Why are you interested in this position?",
+      "Tell me about a time you faced a challenging technical problem and how you resolved it."
+    ],
+    "technical_questions": [
+      {
+        "skill": "React",
+        "question": "What are React Hooks? Can you name some common ones?"
+      },
+      {
+        "skill": "Python",
+        "question": "What are decorators, and how are they used?"
+      },
+      {
+        "skill": "Machine learning",
+        "question": "Describe a precision vs. recall tradeoff in a classification model."
+      },
+      {
+        "skill": "Docker",
+        "question": "Explain the difference between a Docker image and a Docker container."
+      },
+      {
+        "skill": "Machine learning",
+        "question": "Can you explain the difference between supervised and unsupervised learning?"
+      }
+    ],
+    "project_based_questions": [
+      "Walk me through the architecture of the most impactful project listed on your resume.",
+      "What was your specific contribution to the team project you are most proud of?"
+    ]
+  }
+}
