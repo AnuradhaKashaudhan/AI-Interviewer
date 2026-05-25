@@ -161,7 +161,11 @@ const InterviewPage = () => {
             
         } catch (err) {
             console.error("Error uploading resume:", err);
-            alert(`Failed to upload resume: ${err.message}`);
+            if (err.message === "Failed to fetch") {
+                alert("Failed to connect to the backend server. Please ensure the FastAPI server is running.");
+            } else {
+                alert(`Failed to upload resume: ${err.message}`);
+            }
         } finally {
             setUploadingResume(false);
             // Clear input so same file can be uploaded again if needed

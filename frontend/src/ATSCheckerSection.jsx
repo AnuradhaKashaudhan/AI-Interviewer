@@ -103,18 +103,20 @@ const ATSCheckerSection = () => {
     };
 
     return (
-        <section id="ats-checker" className="container pb-32">
+        <section id="ats-checker" className="container pt-24 pb-32">
             <div className="text-center mb-16">
-                <h2 className="text-3xl md:text-4xl font-bold mb-4">ATS Resume Analysis</h2>
+                <h2 className="text-3xl md:text-4xl font-extrabold mb-4 tracking-tight">
+                    ATS <span className="text-gradient">Resume Analysis</span>
+                </h2>
                 <p className="text-text-muted max-w-2xl mx-auto">Get detailed feedback on how well your resume matches automated screening systems.</p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 {/* Input Column */}
                 <div className="lg:col-span-5 space-y-6">
-                    <div className="card p-8 border-white/10 h-full flex flex-col">
+                    <div className="card p-8 border-white/5 h-full flex flex-col">
                         <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-                             <Upload className="w-5 h-5 text-primary" />
+                             <Upload className="w-5 h-5 text-indigo-400" />
                              Analyze Your Resume
                         </h3>
                         
@@ -186,7 +188,7 @@ const ATSCheckerSection = () => {
 
                 {/* Results Column */}
                 <div className="lg:col-span-7">
-                    <div className="card p-8 border-white/10 h-full relative overflow-hidden">
+                    <div className="card p-8 border-white/5 h-full relative overflow-hidden">
                         <AnimatePresence mode="wait">
                             {!results && !isAnalyzing ? (
                                 <motion.div 

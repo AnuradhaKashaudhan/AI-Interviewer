@@ -1,249 +1,248 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Mic, 
-  Video, 
-  MessageSquare, 
-  TrendingUp, 
-  Shield, 
-  ArrowRight,
-  BrainCircuit,
-  Layout,
-  Star,
-  CheckCircle2,
-  FileCheck2
-} from 'lucide-react';
-import ATSCheckerSection from './ATSCheckerSection';
 
 const LandingPage = () => {
     const navigate = useNavigate();
 
-    const features = [
-        {
-            icon: <MessageSquare className="w-6 h-6 text-primary" />,
-            title: "Mock Interviews",
-            description: "Schedule practice sessions with our intelligent AI interviewer."
-        },
-        {
-            icon: <TrendingUp className="w-6 h-6 text-secondary" />,
-            title: "Real-time Feedback",
-            description: "Instant performance analysis and personalized improvement tips."
-        },
-        {
-            icon: <Layout className="w-6 h-6 text-accent" />,
-            title: "Expert Resources",
-            description: "Access a curated library of interview tips and best practices."
-        }
-    ];
+    useEffect(() => {
+        // Intersection Observer for Entrance Animations
+        const observerOptions = {
+            threshold: 0.15,
+            rootMargin: '0px 0px -50px 0px'
+        };
 
-    const companies = ["Google", "Amazon", "Microsoft", "Meta", "Tesla"];
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.reveal').forEach(el => {
+            observer.observe(el);
+        });
+
+        // Cleanup
+        return () => observer.disconnect();
+    }, []);
+
+    const scrollToSection = (e, targetId) => {
+        e.preventDefault();
+        const target = document.querySelector(targetId);
+        if (target) {
+            target.scrollIntoView({ behavior: 'smooth' });
+        }
+    };
 
     return (
-        <div className="landing-page">
-            <div className="bg-gradient" />
-            
-            {/* Navigation */}
-            <nav className="container py-6 flex justify-between items-center relative z-10">
-                <div className="flex items-center gap-2">
-                    <BrainCircuit className="text-primary w-8 h-8" />
-                    <span className="text-xl font-bold tracking-tight">AI Interviewer</span>
-                </div>
-                
-                <div className="hidden md:flex items-center gap-8 text-sm font-medium text-text-muted">
-                    <button onClick={() => document.getElementById('how-it-works').scrollIntoView({ behavior: 'smooth' })} className="hover:text-white transition-colors bg-transparent border-none cursor-pointer">About</button>
-                    <button onClick={() => document.getElementById('features').scrollIntoView({ behavior: 'smooth' })} className="hover:text-white transition-colors bg-transparent border-none cursor-pointer">Features</button>
-                    <button onClick={() => document.getElementById('ats-checker').scrollIntoView({ behavior: 'smooth' })} className="hover:text-white transition-colors bg-transparent border-none cursor-pointer font-bold text-accent px-2 py-1 bg-accent/5 rounded-lg border border-accent/20">ATS Checker ✨</button>
-                    <button onClick={() => document.getElementById('pricing').scrollIntoView({ behavior: 'smooth' })} className="hover:text-white transition-colors bg-transparent border-none cursor-pointer">Pricing</button>
-                    <button onClick={() => document.getElementById('contact').scrollIntoView({ behavior: 'smooth' })} className="hover:text-white transition-colors bg-transparent border-none cursor-pointer">Contact</button>
-                </div>
-
-                <div className="flex items-center gap-4">
-                    <button className="btn-secondary hidden sm:block">Sign Up</button>
-                    <button onClick={() => navigate('/interview')} className="btn-primary">
+        <div className="dark font-body text-on-surface antialiased overflow-x-hidden no-scrollbar bg-background">
+            {/* TopAppBar */}
+            <header className="fixed top-0 w-full z-50 bg-surface/70 backdrop-blur-xl border-b border-outline-variant/30">
+                <div className="flex justify-between items-center px-6 py-4 max-w-7xl mx-auto">
+                    <div className="flex items-center gap-2">
+                        <span className="material-symbols-outlined text-primary-container" style={{ fontVariationSettings: "'FILL' 1" }}>neurology</span>
+                        <span className="font-headline font-bold text-xl bg-clip-text text-transparent bg-gradient-to-r from-primary-container to-secondary-fixed">NEURALINTERVIEW</span>
+                    </div>
+                    <button onClick={() => navigate('/interview')} className="bg-primary-container text-on-primary px-4 py-2 rounded-lg font-label text-label-sm font-semibold transition-transform duration-200 active:scale-95 glow-active">
                         Get Started
                     </button>
                 </div>
-            </nav>
-
-            {/* Hero Section */}
-            <header className="container pt-20 pb-32">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-                    <motion.div 
-                        initial={{ opacity: 0, x: -50 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.8 }}
-                    >
-                        
-                        <h1 className="text-5xl md:text-6xl font-bold mb-6 leading-tight">
-                            Master Your <br />
-                            Interview with AI.
-                        </h1>
-                        
-                        <p className="text-lg text-text-muted mb-10 max-w-xl">
-                            The intelligent way to prepare for your next career move. 
-                            Practice with personalized AI-driven mock interviews.
-                        </p>
-                        
-                        <div className="flex flex-wrap gap-4">
-                            <button onClick={() => navigate('/interview')} className="btn-primary px-8 py-3">
-                                Get Started Free
-                            </button>
-                        </div>
-                    </motion.div>
-
-                    <motion.div 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="relative"
-                    >
-                        <div className="card p-4 overflow-hidden border-white/10">
-                            <img 
-                                src="/hero_ai_interviewer.png" 
-                                alt="AI Interviewer" 
-                                className="w-full h-auto rounded-lg"
-                            />
-                        </div>
-                    </motion.div>
-                </div>
             </header>
 
-            {/* Trusted By Section */}
-            <section className="container pb-32">
-                <div className="card py-8 px-8 flex flex-col md:flex-row items-center justify-between gap-8 border-white/5 text-center md:text-left">
-                    <span className="text-xs font-bold text-text-muted uppercase tracking-widest">Used by professionals at</span>
-                    <div className="flex flex-wrap justify-center gap-8 md:gap-16 opacity-30 grayscale hover:grayscale-0 transition-all">
-                        {companies.map(company => (
-                            <span key={company} className="text-xl font-bold text-white">{company}</span>
-                        ))}
+            <main className="pt-20">
+                {/* Hero Section */}
+                <section className="relative px-6 py-16 flex flex-col items-center text-center overflow-hidden min-h-[795px] justify-center">
+                    {/* Background Ambience */}
+                    <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+                        <div className="bg-ambience absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-[#b026ff]/10 rounded-full blur-[120px]"></div>
+                        <div className="bg-ambience absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-[#00f0ff]/10 rounded-full blur-[120px] [animation-delay:-5s]"></div>
+                        <img alt="AI Background" className="w-full h-full object-cover mix-blend-overlay opacity-30 scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDUc7aFmdQ1gSM-_4P_MVJ030ENbABPSOVFsG442wPM0tXyWoNg1Gb7R8IA98IM3i8UlU0xfQwx17VGpCHx5mFuIjNqYp_LMXS7P0anbKQYZp06qz5tiQLAClRAYmJeN-AVv31rI0zA84XDig5i7djU5jOREyNjQPM9eQ_CmkpnCkStNkhGCXgAkJrE8tkflaR6oxzPP6njBX2khbrWa5jwrkcUg6b13Por835EetRiugbKh6BLLZNZQKrwk_2YiWiYBJPZ7B99zAI" />
                     </div>
-                </div>
-            </section>
-
-            {/* ATS Checker Section */}
-            <ATSCheckerSection />
-
-            {/* How It Works Section */}
-            <section id="how-it-works" className="container pb-32">
-                <div className="text-center mb-16">
-                    <h2 className="text-4xl md:text-5xl font-bold mb-4">How It <span className="text-gradient">Works</span></h2>
-                    <p className="text-text-muted max-w-2xl mx-auto">Our AI-driven process is designed to give you the most realistic interview experience possible.</p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    {[
-                        { step: "01", title: "Upload Resume", desc: "Our AI parses your experience to tailor questions specifically for your background." },
-                        { step: "02", title: "Live Interview", desc: "Experience a real-time conversation with our AI interviewer, complete with audio and video." },
-                        { step: "03", title: "Detailed Analysis", desc: "Receive comprehensive feedback on your answers, soft skills, and technical knowledge." }
-                    ].map((step, i) => (
-                        <motion.div 
-                            key={i}
-                            initial={{ opacity: 0, y: 30 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ delay: i * 0.2 }}
-                            className="card p-8 border-white/5 hover:border-primary/30 transition-all group"
-                        >
-                            <div className="text-5xl font-black text-white/5 group-hover:text-primary/20 transition-colors mb-4">{step.step}</div>
-                            <h3 className="text-xl font-bold mb-2 text-white">{step.title}</h3>
-                            <p className="text-text-muted text-sm leading-relaxed">{step.desc}</p>
-                        </motion.div>
-                    ))}
-                </div>
-            </section>
-            {/* Features Section */}
-            <section id="features" className="container pb-32">
-                <div className="text-center mb-16">
-                    <h2 className="text-4xl md:text-5xl font-bold mb-4">Powerful <span className="text-gradient">Features</span></h2>
-                    <p className="text-text-muted max-w-2xl mx-auto">Everything you need to ace your next technical or behavioral interview.</p>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {[
-                        { icon: <Mic className="text-primary" />, title: "Voice Recognition", desc: "Advanced STT to capture every detail of your answer." },
-                        { icon: <Video className="text-secondary" />, title: "Body Language", desc: "AI analysis of your confidence and eye contact via webcam." },
-                        { icon: <BrainCircuit className="text-accent" />, title: "Custom Questions", desc: "Dynamic generation based on your unique resume and role." },
-                        { icon: <TrendingUp className="text-primary" />, title: "Progress Tracking", desc: "Visualize your improvement over multiple sessions." }
-                    ].map((feat, i) => (
-                        <div key={i} className="card p-6 border-white/5 hover:border-primary/20 transition-all">
-                            <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center mb-4">{feat.icon}</div>
-                            <h3 className="font-bold mb-2">{feat.title}</h3>
-                            <p className="text-sm text-text-muted">{feat.desc}</p>
+                    <div className="relative z-10 max-w-lg reveal">
+                        <h1 className="font-headline text-5xl font-extrabold tracking-tight text-on-surface leading-tight mb-6">
+                            Master Your <span className="text-primary-container text-glow-cyan">Interview</span> with AI
+                        </h1>
+                        <p className="text-on-surface-variant text-lg mb-10 font-body leading-relaxed">
+                            Harness the power of neural analysis to perfect your performance through real-time biometric feedback and industry-specific simulations.
+                        </p>
+                        <div className="flex flex-col gap-4 w-full px-4">
+                            <button onClick={() => navigate('/interview')} className="w-full bg-primary-container text-on-primary py-4 rounded-xl font-headline font-bold text-lg transition-all active:scale-95 glow-active">
+                                Get Started
+                            </button>
+                            <button onClick={(e) => scrollToSection(e, '#how-it-works')} className="w-full border border-outline-variant bg-surface/40 backdrop-blur-md text-on-surface py-4 rounded-xl font-headline font-bold text-lg transition-all hover:bg-surface-container-high active:scale-95">
+                                Watch Demo
+                            </button>
                         </div>
-                    ))}
-                </div>
-            </section>
-
-            {/* Pricing Section */}
-            <section id="pricing" className="container pb-32">
-                <div className="text-center mb-16">
-                    <h2 className="text-4xl md:text-5xl font-bold mb-4">Simple <span className="text-gradient">Pricing</span></h2>
-                    <p className="text-text-muted max-w-2xl mx-auto">Choose the plan that fits your career goals.</p>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-                    <div className="card p-10 border-white/5 flex flex-col">
-                        <h3 className="text-2xl font-bold mb-2">Free</h3>
-                        <div className="text-4xl font-bold mb-6">$0<span className="text-xl text-text-muted">/mo</span></div>
-                        <ul className="space-y-4 mb-10 text-text-muted flex-grow">
-                            <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-500" /> 3 Interviews / month</li>
-                            <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-500" /> Basic AI Feedback</li>
-                            <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-500" /> Resume Analysis</li>
-                        </ul>
-                        <button className="btn-secondary w-full">Current Plan</button>
                     </div>
-                    <div className="card p-10 border-primary/30 relative overflow-hidden flex flex-col scale-105 shadow-2xl shadow-primary/20">
-                        <div className="absolute top-0 right-0 bg-primary px-4 py-1 text-xs font-bold rounded-bl-xl">POPULAR</div>
-                        <h3 className="text-2xl font-bold mb-2">Pro</h3>
-                        <div className="text-4xl font-bold mb-6">$19<span className="text-xl text-text-muted">/mo</span></div>
-                        <ul className="space-y-4 mb-10 text-text-muted flex-grow">
-                            <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-primary" /> Unlimited Interviews</li>
-                            <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-primary" /> Advanced Video Analysis</li>
-                            <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-primary" /> Priority AI Support</li>
-                            <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-primary" /> Exportable Reports</li>
-                        </ul>
-                        <button className="btn-primary w-full">Upgrade Now</button>
-                    </div>
-                </div>
-            </section>
+                </section>
 
-            {/* Footer / Contact */}
-            <footer id="contact" className="container py-20 border-t border-white/5">
-                <div className="flex flex-col md:flex-row justify-between gap-12">
-                    <div className="max-w-xs">
-                        <div className="flex items-center gap-2 mb-6">
-                            <BrainCircuit className="text-primary w-6 h-6" />
-                            <span className="text-xl font-bold tracking-tight">AI Interviewer</span>
+                {/* Features Bento Grid */}
+                <section className="px-6 py-20 bg-surface-container-lowest">
+                    <div className="mb-12 reveal">
+                        <h2 className="font-headline text-3xl font-bold text-on-surface mb-2">Neural Capabilities</h2>
+                        <div className="h-1 w-20 bg-gradient-to-r from-primary-container to-secondary-fixed rounded-full"></div>
+                    </div>
+                    <div className="grid grid-cols-1 gap-4">
+                        {/* Card 1 */}
+                        <div className="glass-card reveal p-6 rounded-2xl flex flex-col gap-4 border-l-4 border-l-primary-container">
+                            <span className="material-symbols-outlined text-primary-container text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>keyboard_voice</span>
+                            <div>
+                                <h3 className="font-headline font-bold text-xl text-on-surface">Voice Recognition</h3>
+                                <p className="text-on-surface-variant text-sm mt-1">Advanced speech analysis focusing on tone, clarity, and filler word detection.</p>
+                            </div>
                         </div>
-                        <p className="text-sm text-text-muted leading-relaxed">Helping engineers land their dream jobs with state-of-the-art AI coaching since 2024.</p>
+                        {/* Card 2 */}
+                        <div className="glass-card reveal p-6 rounded-2xl flex flex-col gap-4 border-l-4 border-l-secondary-fixed">
+                            <span className="material-symbols-outlined text-secondary-fixed text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>visibility</span>
+                            <div>
+                                <h3 className="font-headline font-bold text-xl text-on-surface">Body Language</h3>
+                                <p className="text-on-surface-variant text-sm mt-1">Visual feedback on posture, eye contact, and micro-expressions.</p>
+                            </div>
+                        </div>
+                        {/* Card 3 */}
+                        <div className="glass-card reveal p-6 rounded-2xl flex flex-col gap-4 border-l-4 border-l-[#b026ff]">
+                            <span className="material-symbols-outlined text-[#b026ff] text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>quiz</span>
+                            <div>
+                                <h3 className="font-headline font-bold text-xl text-on-surface">Custom Questions</h3>
+                                <p className="text-on-surface-variant text-sm mt-1">Deep-dive into industry-specific technical and behavioral inquiries.</p>
+                            </div>
+                        </div>
+                        {/* Card 4 */}
+                        <div className="glass-card reveal p-6 rounded-2xl flex flex-col gap-4 border-l-4 border-l-tertiary-fixed-dim">
+                            <span className="material-symbols-outlined text-tertiary-fixed-dim text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>monitoring</span>
+                            <div>
+                                <h3 className="font-headline font-bold text-xl text-on-surface">Progress Tracking</h3>
+                                <p className="text-on-surface-variant text-sm mt-1">Data-driven growth metrics with performance heatmaps and scoring.</p>
+                            </div>
+                        </div>
                     </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-12">
-                        <div>
-                            <h4 className="font-bold mb-4">Product</h4>
-                            <ul className="space-y-2 text-sm text-text-muted">
-                                <li><a href="#" className="hover:text-white transition-colors">Features</a></li>
-                                <li><a href="#" className="hover:text-white transition-colors">Pricing</a></li>
-                                <li><a href="#" className="hover:text-white transition-colors">Roadmap</a></li>
+                </section>
+
+                {/* How It Works */}
+                <section id="how-it-works" className="px-6 py-20 relative">
+                    <div className="mb-12 text-center reveal">
+                        <h2 className="font-headline text-3xl font-bold text-on-surface">The Neural Process</h2>
+                        <p className="text-on-surface-variant text-sm">Your path to interview mastery</p>
+                    </div>
+                    <div className="relative flex flex-col gap-12">
+                        {/* Connecting Line */}
+                        <div className="absolute left-6 top-4 bottom-4 w-0.5 bg-gradient-to-b from-primary-container via-[#b026ff] to-secondary-fixed opacity-30"></div>
+                        {/* Step 1 */}
+                        <div className="relative flex gap-6 items-start reveal">
+                            <div className="z-10 w-12 h-12 rounded-full bg-surface-container-high border-2 border-primary-container flex items-center justify-center font-headline font-bold text-primary-container shadow-[0_0_10px_rgba(0,240,255,0.4)]">1</div>
+                            <div className="flex-1">
+                                <h4 className="font-headline font-bold text-lg text-on-surface">Select Role</h4>
+                                <p className="text-on-surface-variant text-sm">Choose your target position from over 500+ tech and business domains.</p>
+                            </div>
+                        </div>
+                        {/* Step 2 */}
+                        <div className="relative flex gap-6 items-start reveal">
+                            <div className="z-10 w-12 h-12 rounded-full bg-surface-container-high border-2 border-[#b026ff] flex items-center justify-center font-headline font-bold text-[#b026ff] shadow-[0_0_10px_rgba(176,38,255,0.4)]">2</div>
+                            <div className="flex-1">
+                                <h4 className="font-headline font-bold text-lg text-on-surface">AI Interview</h4>
+                                <p className="text-on-surface-variant text-sm">Engage with our lifelike neural avatar in a real-time, high-pressure session.</p>
+                            </div>
+                        </div>
+                        {/* Step 3 */}
+                        <div className="relative flex gap-6 items-start reveal">
+                            <div className="z-10 w-12 h-12 rounded-full bg-surface-container-high border-2 border-secondary-fixed flex items-center justify-center font-headline font-bold text-secondary-fixed shadow-[0_0_10px_rgba(150,209,214,0.4)]">3</div>
+                            <div className="flex-1">
+                                <h4 className="font-headline font-bold text-lg text-on-surface">Neural Analysis</h4>
+                                <p className="text-on-surface-variant text-sm">Receive detailed feedback based on thousands of successful interview data points.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Pricing */}
+                <section className="px-6 py-20 bg-surface-container">
+                    <div className="mb-12 text-center reveal">
+                        <h2 className="font-headline text-3xl font-bold text-on-surface">Choose Your Core</h2>
+                    </div>
+                    <div className="flex flex-col gap-8">
+                        {/* Starter */}
+                        <div className="glass-card reveal p-8 rounded-3xl relative overflow-hidden group">
+                            <div className="mb-6">
+                                <span className="text-on-surface-variant font-label text-xs uppercase tracking-widest">Starter Tier</span>
+                                <h3 className="font-headline font-bold text-2xl text-on-surface mt-1">Basic Core</h3>
+                            </div>
+                            <div className="flex items-baseline gap-1 mb-6">
+                                <span className="text-3xl font-bold text-on-surface">$0</span>
+                                <span className="text-on-surface-variant text-sm">/month</span>
+                            </div>
+                            <ul className="space-y-4 mb-8">
+                                <li className="flex items-center gap-3 text-sm text-on-surface-variant">
+                                    <span className="material-symbols-outlined text-primary-fixed-dim text-lg">check_circle</span>
+                                    3 Sessions per month
+                                </li>
+                                <li className="flex items-center gap-3 text-sm text-on-surface-variant">
+                                    <span className="material-symbols-outlined text-primary-fixed-dim text-lg">check_circle</span>
+                                    Standard Question Bank
+                                </li>
                             </ul>
+                            <button className="w-full py-3 rounded-xl border border-outline-variant font-bold text-on-surface transition-all group-hover:bg-surface-variant">
+                                Begin Free
+                            </button>
                         </div>
-                        <div>
-                            <h4 className="font-bold mb-4">Company</h4>
-                            <ul className="space-y-2 text-sm text-text-muted">
-                                <li><a href="#" className="hover:text-white transition-colors">About</a></li>
-                                <li><a href="#" className="hover:text-white transition-colors">Blog</a></li>
-                                <li><a href="#" className="hover:text-white transition-colors">Careers</a></li>
+                        {/* Pro */}
+                        <div className="glass-card reveal neon-pulse-card p-8 rounded-3xl relative border-2 border-primary-container/30 overflow-hidden scale-[1.05] z-10">
+                            <div className="absolute top-0 right-0 bg-primary-container text-on-primary font-bold text-[10px] px-3 py-1 rounded-bl-lg uppercase tracking-wider">Neural Link</div>
+                            <div className="mb-6">
+                                <span className="text-primary-container font-label text-xs uppercase tracking-widest font-bold">Recommended</span>
+                                <h3 className="font-headline font-bold text-2xl text-on-surface mt-1">Pro Neural</h3>
+                            </div>
+                            <div className="flex items-baseline gap-1 mb-6">
+                                <span className="text-3xl font-bold text-on-surface">$29</span>
+                                <span className="text-on-surface-variant text-sm">/month</span>
+                            </div>
+                            <ul className="space-y-4 mb-8">
+                                <li className="flex items-center gap-3 text-sm text-on-surface">
+                                    <span className="material-symbols-outlined text-primary-container text-lg">verified</span>
+                                    Unlimited AI Interviews
+                                </li>
+                                <li className="flex items-center gap-3 text-sm text-on-surface">
+                                    <span className="material-symbols-outlined text-primary-container text-lg">verified</span>
+                                    Full Body Language Analysis
+                                </li>
+                                <li className="flex items-center gap-3 text-sm text-on-surface">
+                                    <span className="material-symbols-outlined text-primary-container text-lg">verified</span>
+                                    Priority Neural Link Processing
+                                </li>
                             </ul>
-                        </div>
-                        <div>
-                            <h4 className="font-bold mb-4">Support</h4>
-                            <ul className="space-y-2 text-sm text-text-muted">
-                                <li><a href="#" className="hover:text-white transition-colors">Help Center</a></li>
-                                <li><a href="#" className="hover:text-white transition-colors">Documentation</a></li>
-                                <li><a href="#" className="hover:text-white transition-colors">Privacy</a></li>
-                            </ul>
+                            <button className="w-full py-3 rounded-xl bg-primary-container text-on-primary font-bold transition-transform active:scale-95 glow-active">
+                                Upgrade Now
+                            </button>
                         </div>
                     </div>
-                </div>
-                <div className="mt-20 pt-8 border-t border-white/5 text-center text-xs text-text-muted">
-                    © 2026 AI Mock Interviewer. All rights reserved. Built with ❤️ for developers.
+                </section>
+
+                {/* CTA Final */}
+                <section className="px-6 py-24 text-center reveal">
+                    <div className="p-8 rounded-3xl bg-gradient-to-br from-surface-container-high to-surface border border-outline-variant/30 relative overflow-hidden group">
+                        <div className="absolute top-[-20%] right-[-20%] w-40 h-40 bg-secondary-container/20 blur-3xl group-hover:bg-secondary-container/30 transition-colors duration-700"></div>
+                        <h2 className="font-headline text-3xl font-bold text-on-surface mb-4">Ready to Evolve?</h2>
+                        <p className="text-on-surface-variant mb-8">Join 50,000+ candidates who upgraded their careers with neural feedback.</p>
+                        <button className="bg-on-surface text-surface py-4 px-10 rounded-full font-headline font-bold text-lg hover:bg-primary-container hover:text-on-primary transition-all duration-300 active:scale-95">
+                            Initialize Setup
+                        </button>
+                    </div>
+                </section>
+            </main>
+
+            {/* Footer */}
+            <footer className="w-full py-12 border-t border-outline-variant/20 bg-surface-container-lowest">
+                <div className="flex flex-col md:flex-row justify-between items-center px-8 gap-6 max-w-7xl mx-auto">
+                    <div className="flex flex-col items-center md:items-start gap-2">
+                        <span className="font-headline font-black text-on-surface text-xl">NEURALINTERVIEW AI</span>
+                        <p className="font-body text-label-sm tracking-tighter text-outline">© 2024 NEURALINTERVIEW AI. SYSTEM ACTIVE.</p>
+                    </div>
+                    <div className="flex gap-6">
+                        <a className="text-outline hover:text-primary-container transition-colors duration-300 font-body text-label-sm tracking-tighter" href="#">Architecture</a>
+                        <a className="text-outline hover:text-primary-container transition-colors duration-300 font-body text-label-sm tracking-tighter" href="#">Protocols</a>
+                        <a className="text-outline hover:text-primary-container transition-colors duration-300 font-body text-label-sm tracking-tighter" href="#">Privacy</a>
+                        <a className="text-outline hover:text-primary-container transition-colors duration-300 font-body text-label-sm tracking-tighter" href="#">Neural Link</a>
+                    </div>
                 </div>
             </footer>
         </div>

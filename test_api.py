@@ -1,7 +1,6 @@
 import requests
 from reportlab.pdfgen import canvas
 import os
-
 pdf_path = "sample_resume.pdf"
 # Create a dummy PDF
 c = canvas.Canvas(pdf_path)

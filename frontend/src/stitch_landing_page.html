@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+
+<html class="dark scroll-smooth" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>NEURALINTERVIEW | AI Mock Interviewer</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600&amp;family=Public+Sans:wght@400;600&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-tertiary-container": "#715d00",
+                    "surface-variant": "#2e3637",
+                    "outline-variant": "#3b494b",
+                    "outline": "#849495",
+                    "on-secondary-fixed": "#002022",
+                    "error-container": "#93000a",
+                    "surface": "#0d1515",
+                    "inverse-on-surface": "#2a3233",
+                    "surface-container-low": "#151d1e",
+                    "on-background": "#dce4e5",
+                    "primary-fixed": "#7df4ff",
+                    "on-secondary-container": "#84bfc5",
+                    "on-primary-container": "#006970",
+                    "on-error-container": "#ffdad6",
+                    "surface-container-high": "#232b2c",
+                    "error": "#ffb4ab",
+                    "on-tertiary-fixed-variant": "#554500",
+                    "tertiary": "#fff5de",
+                    "on-tertiary": "#3b2f00",
+                    "surface-container-lowest": "#080f10",
+                    "tertiary-container": "#fed639",
+                    "surface-dim": "#0d1515",
+                    "secondary": "#96d1d6",
+                    "tertiary-fixed": "#ffe179",
+                    "secondary-fixed": "#b1edf3",
+                    "primary-container": "#00f0ff",
+                    "on-primary-fixed-variant": "#004f54",
+                    "on-primary-fixed": "#002022",
+                    "tertiary-fixed-dim": "#eac324",
+                    "on-surface-variant": "#b9cacb",
+                    "secondary-container": "#074f54",
+                    "on-secondary": "#00363a",
+                    "on-primary": "#00363a",
+                    "primary-fixed-dim": "#00dbe9",
+                    "on-secondary-fixed-variant": "#074f54",
+                    "inverse-primary": "#006970",
+                    "surface-tint": "#00dbe9",
+                    "on-surface": "#dce4e5",
+                    "surface-container-highest": "#2e3637",
+                    "secondary-fixed-dim": "#96d1d6",
+                    "background": "#0d1515",
+                    "inverse-surface": "#dce4e5",
+                    "surface-bright": "#333b3b",
+                    "on-error": "#690005",
+                    "surface-container": "#192122",
+                    "primary": "#dbfcff",
+                    "on-tertiary-fixed": "#231b00"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Space Grotesk"],
+                    "display": ["Space Grotesk"],
+                    "body": ["Inter"],
+                    "label": ["Public Sans"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 15px rgba(0, 240, 255, 0.3); }
+            50% { box-shadow: 0 0 35px rgba(0, 240, 255, 0.6); }
+        }
+        @keyframes drift {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(2%, 2%) scale(1.05); }
+            100% { transform: translate(0, 0) scale(1); }
+        }
+        @keyframes neon-border-pulse {
+            0%, 100% { border-color: rgba(0, 240, 255, 0.5); box-shadow: 0 0 10px rgba(0, 240, 255, 0.1); }
+            50% { border-color: rgba(0, 240, 255, 1); box-shadow: 0 0 25px rgba(0, 240, 255, 0.3); }
+        }
+        .glow-active { animation: pulse-glow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        .neon-pulse-card { animation: neon-border-pulse 4s ease-in-out infinite; }
+        
+        .glass-card {
+            background: rgba(21, 29, 30, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(132, 148, 149, 0.2);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .glass-card:hover, .glass-card:active {
+            transform: translateY(-4px) scale(1.02);
+            border-color: rgba(0, 240, 255, 0.4);
+            box-shadow: 0 10px 30px -10px rgba(0, 240, 255, 0.2);
+        }
+        
+        .bg-ambience {
+            animation: drift 15s ease-in-out infinite;
+        }
+        
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .text-glow-cyan { text-shadow: 0 0 8px rgba(0, 240, 255, 0.6); }
+        body { background-color: #0d1515; }
+        
+        /* Hide scrollbar but keep functionality */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="font-body text-on-surface antialiased overflow-x-hidden no-scrollbar">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface/70 backdrop-blur-xl border-b border-outline-variant/30">
+<div class="flex justify-between items-center px-6 py-4 max-w-7xl mx-auto">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-container" style="font-variation-settings: 'FILL' 1;">neurology</span>
+<span class="font-headline font-bold text-xl bg-clip-text text-transparent bg-gradient-to-r from-primary-container to-secondary-fixed">NEURALINTERVIEW</span>
+</div>
+<button class="bg-primary-container text-on-primary px-4 py-2 rounded-lg font-label text-label-sm font-semibold transition-transform duration-200 active:scale-95 glow-active">
+            Get Started
+        </button>
+</div>
+</header>
+<main class="pt-20">
+<!-- Hero Section -->
+<section class="relative px-6 py-16 flex flex-col items-center text-center overflow-hidden min-h-[795px] justify-center">
+<!-- Background Ambience -->
+<div class="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+<div class="bg-ambience absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-[#b026ff]/10 rounded-full blur-[120px]"></div>
+<div class="bg-ambience absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-[#00f0ff]/10 rounded-full blur-[120px] [animation-delay:-5s]"></div>
+<img alt="AI Background" class="w-full h-full object-cover mix-blend-overlay opacity-30 scale-110" data-alt="A complex 3D digital neural network visualized as glowing cyan and purple fiber-optic nodes and connections in a vast dark void. The scene is cinematic with deep slate backgrounds, high-tech glassmorphism effects, and soft neon light blooms reflecting off invisible surfaces, creating a premium futuristic artificial intelligence atmosphere." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDUc7aFmdQ1gSM-_4P_MVJ030ENbABPSOVFsG442wPM0tXyWoNg1Gb7R8IA98IM3i8UlU0xfQwx17VGpCHx5mFuIjNqYp_LMXS7P0anbKQYZp06qz5tiQLAClRAYmJeN-AVv31rI0zA84XDig5i7djU5jOREyNjQPM9eQ_CmkpnCkStNkhGCXgAkJrE8tkflaR6oxzPP6njBX2khbrWa5jwrkcUg6b13Por835EetRiugbKh6BLLZNZQKrwk_2YiWiYBJPZ7B99zAI"/>
+</div>
+<div class="relative z-10 max-w-lg reveal">
+<h1 class="font-headline text-5xl font-extrabold tracking-tight text-on-surface leading-tight mb-6">
+                Master Your <span class="text-primary-container text-glow-cyan">Interview</span> with AI
+            </h1>
+<p class="text-on-surface-variant text-lg mb-10 font-body leading-relaxed">
+                Harness the power of neural analysis to perfect your performance through real-time biometric feedback and industry-specific simulations.
+            </p>
+<div class="flex flex-col gap-4 w-full px-4">
+<button class="w-full bg-primary-container text-on-primary py-4 rounded-xl font-headline font-bold text-lg transition-all active:scale-95 glow-active">
+                    Get Started
+                </button>
+<button class="w-full border border-outline-variant bg-surface/40 backdrop-blur-md text-on-surface py-4 rounded-xl font-headline font-bold text-lg transition-all hover:bg-surface-container-high active:scale-95">
+                    Watch Demo
+                </button>
+</div>
+</div>
+</section>
+<!-- Features Bento Grid -->
+<section class="px-6 py-20 bg-surface-container-lowest">
+<div class="mb-12 reveal">
+<h2 class="font-headline text-3xl font-bold text-on-surface mb-2">Neural Capabilities</h2>
+<div class="h-1 w-20 bg-gradient-to-r from-primary-container to-secondary-fixed rounded-full"></div>
+</div>
+<div class="grid grid-cols-1 gap-4">
+<!-- Card 1 -->
+<div class="glass-card reveal p-6 rounded-2xl flex flex-col gap-4 border-l-4 border-l-primary-container">
+<span class="material-symbols-outlined text-primary-container text-4xl" style="font-variation-settings: 'FILL' 1;">keyboard_voice</span>
+<div>
+<h3 class="font-headline font-bold text-xl text-on-surface">Voice Recognition</h3>
+<p class="text-on-surface-variant text-sm mt-1">Advanced speech analysis focusing on tone, clarity, and filler word detection.</p>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="glass-card reveal p-6 rounded-2xl flex flex-col gap-4 border-l-4 border-l-secondary-fixed">
+<span class="material-symbols-outlined text-secondary-fixed text-4xl" style="font-variation-settings: 'FILL' 1;">visibility</span>
+<div>
+<h3 class="font-headline font-bold text-xl text-on-surface">Body Language</h3>
+<p class="text-on-surface-variant text-sm mt-1">Visual feedback on posture, eye contact, and micro-expressions.</p>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="glass-card reveal p-6 rounded-2xl flex flex-col gap-4 border-l-4 border-l-[#b026ff]">
+<span class="material-symbols-outlined text-[#b026ff] text-4xl" style="font-variation-settings: 'FILL' 1;">quiz</span>
+<div>
+<h3 class="font-headline font-bold text-xl text-on-surface">Custom Questions</h3>
+<p class="text-on-surface-variant text-sm mt-1">Deep-dive into industry-specific technical and behavioral inquiries.</p>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="glass-card reveal p-6 rounded-2xl flex flex-col gap-4 border-l-4 border-l-tertiary-fixed-dim">
+<span class="material-symbols-outlined text-tertiary-fixed-dim text-4xl" style="font-variation-settings: 'FILL' 1;">monitoring</span>
+<div>
+<h3 class="font-headline font-bold text-xl text-on-surface">Progress Tracking</h3>
+<p class="text-on-surface-variant text-sm mt-1">Data-driven growth metrics with performance heatmaps and scoring.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- How It Works -->
+<section class="px-6 py-20 relative">
+<div class="mb-12 text-center reveal">
+<h2 class="font-headline text-3xl font-bold text-on-surface">The Neural Process</h2>
+<p class="text-on-surface-variant text-sm">Your path to interview mastery</p>
+</div>
+<div class="relative flex flex-col gap-12">
+<!-- Connecting Line -->
+<div class="absolute left-6 top-4 bottom-4 w-0.5 bg-gradient-to-b from-primary-container via-[#b026ff] to-secondary-fixed opacity-30"></div>
+<!-- Step 1 -->
+<div class="relative flex gap-6 items-start reveal">
+<div class="z-10 w-12 h-12 rounded-full bg-surface-container-high border-2 border-primary-container flex items-center justify-center font-headline font-bold text-primary-container shadow-[0_0_10px_rgba(0,240,255,0.4)]">1</div>
+<div class="flex-1">
+<h4 class="font-headline font-bold text-lg text-on-surface">Select Role</h4>
+<p class="text-on-surface-variant text-sm">Choose your target position from over 500+ tech and business domains.</p>
+</div>
+</div>
+<!-- Step 2 -->
+<div class="relative flex gap-6 items-start reveal">
+<div class="z-10 w-12 h-12 rounded-full bg-surface-container-high border-2 border-[#b026ff] flex items-center justify-center font-headline font-bold text-[#b026ff] shadow-[0_0_10px_rgba(176,38,255,0.4)]">2</div>
+<div class="flex-1">
+<h4 class="font-headline font-bold text-lg text-on-surface">AI Interview</h4>
+<p class="text-on-surface-variant text-sm">Engage with our lifelike neural avatar in a real-time, high-pressure session.</p>
+</div>
+</div>
+<!-- Step 3 -->
+<div class="relative flex gap-6 items-start reveal">
+<div class="z-10 w-12 h-12 rounded-full bg-surface-container-high border-2 border-secondary-fixed flex items-center justify-center font-headline font-bold text-secondary-fixed shadow-[0_0_10px_rgba(150,209,214,0.4)]">3</div>
+<div class="flex-1">
+<h4 class="font-headline font-bold text-lg text-on-surface">Neural Analysis</h4>
+<p class="text-on-surface-variant text-sm">Receive detailed feedback based on thousands of successful interview data points.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Pricing -->
+<section class="px-6 py-20 bg-surface-container">
+<div class="mb-12 text-center reveal">
+<h2 class="font-headline text-3xl font-bold text-on-surface">Choose Your Core</h2>
+</div>
+<div class="flex flex-col gap-8">
+<!-- Starter -->
+<div class="glass-card reveal p-8 rounded-3xl relative overflow-hidden group">
+<div class="mb-6">
+<span class="text-on-surface-variant font-label text-xs uppercase tracking-widest">Starter Tier</span>
+<h3 class="font-headline font-bold text-2xl text-on-surface mt-1">Basic Core</h3>
+</div>
+<div class="flex items-baseline gap-1 mb-6">
+<span class="text-3xl font-bold text-on-surface">$0</span>
+<span class="text-on-surface-variant text-sm">/month</span>
+</div>
+<ul class="space-y-4 mb-8">
+<li class="flex items-center gap-3 text-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-primary-fixed-dim text-lg">check_circle</span>
+                        3 Sessions per month
+                    </li>
+<li class="flex items-center gap-3 text-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-primary-fixed-dim text-lg">check_circle</span>
+                        Standard Question Bank
+                    </li>
+</ul>
+<button class="w-full py-3 rounded-xl border border-outline-variant font-bold text-on-surface transition-all group-hover:bg-surface-variant">
+                    Begin Free
+                </button>
+</div>
+<!-- Pro -->
+<div class="glass-card reveal neon-pulse-card p-8 rounded-3xl relative border-2 border-primary-container/30 overflow-hidden scale-[1.05] z-10">
+<div class="absolute top-0 right-0 bg-primary-container text-on-primary font-bold text-[10px] px-3 py-1 rounded-bl-lg uppercase tracking-wider">Neural Link</div>
+<div class="mb-6">
+<span class="text-primary-container font-label text-xs uppercase tracking-widest font-bold">Recommended</span>
+<h3 class="font-headline font-bold text-2xl text-on-surface mt-1">Pro Neural</h3>
+</div>
+<div class="flex items-baseline gap-1 mb-6">
+<span class="text-3xl font-bold text-on-surface">$29</span>
+<span class="text-on-surface-variant text-sm">/month</span>
+</div>
+<ul class="space-y-4 mb-8">
+<li class="flex items-center gap-3 text-sm text-on-surface">
+<span class="material-symbols-outlined text-primary-container text-lg">verified</span>
+                        Unlimited AI Interviews
+                    </li>
+<li class="flex items-center gap-3 text-sm text-on-surface">
+<span class="material-symbols-outlined text-primary-container text-lg">verified</span>
+                        Full Body Language Analysis
+                    </li>
+<li class="flex items-center gap-3 text-sm text-on-surface">
+<span class="material-symbols-outlined text-primary-container text-lg">verified</span>
+                        Priority Neural Link Processing
+                    </li>
+</ul>
+<button class="w-full py-3 rounded-xl bg-primary-container text-on-primary font-bold transition-transform active:scale-95 glow-active">
+                    Upgrade Now
+                </button>
+</div>
+</div>
+</section>
+<!-- CTA Final -->
+<section class="px-6 py-24 text-center reveal">
+<div class="p-8 rounded-3xl bg-gradient-to-br from-surface-container-high to-surface border border-outline-variant/30 relative overflow-hidden group">
+<div class="absolute top-[-20%] right-[-20%] w-40 h-40 bg-secondary-container/20 blur-3xl group-hover:bg-secondary-container/30 transition-colors duration-700"></div>
+<h2 class="font-headline text-3xl font-bold text-on-surface mb-4">Ready to Evolve?</h2>
+<p class="text-on-surface-variant mb-8">Join 50,000+ candidates who upgraded their careers with neural feedback.</p>
+<button class="bg-on-surface text-surface py-4 px-10 rounded-full font-headline font-bold text-lg hover:bg-primary-container hover:text-on-primary transition-all duration-300 active:scale-95">
+                Initialize Setup
+            </button>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="w-full py-12 border-t border-outline-variant/20 bg-surface-container-lowest">
+<div class="flex flex-col md:flex-row justify-between items-center px-8 gap-6 max-w-7xl mx-auto">
+<div class="flex flex-col items-center md:items-start gap-2">
+<span class="font-headline font-black text-on-surface text-xl">NEURALINTERVIEW AI</span>
+<p class="font-body text-label-sm tracking-tighter text-outline">© 2024 NEURALINTERVIEW AI. SYSTEM ACTIVE.</p>
+</div>
+<div class="flex gap-6">
+<a class="text-outline hover:text-primary-container transition-colors duration-300 font-body text-label-sm tracking-tighter" href="#">Architecture</a>
+<a class="text-outline hover:text-primary-container transition-colors duration-300 font-body text-label-sm tracking-tighter" href="#">Protocols</a>
+<a class="text-outline hover:text-primary-container transition-colors duration-300 font-body text-label-sm tracking-tighter" href="#">Privacy</a>
+<a class="text-outline hover:text-primary-container transition-colors duration-300 font-body text-label-sm tracking-tighter" href="#">Neural Link</a>
+</div>
+</div>
+</footer>
+<script>
+    // Intersection Observer for Entrance Animations
+    const observerOptions = {
+        threshold: 0.15,
+        rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('active');
+                // Optional: stop observing once revealed
+                // observer.unobserve(entry.target);
+            }
+        });
+    }, observerOptions);
+
+    document.querySelectorAll('.reveal').forEach(el => {
+        observer.observe(el);
+    });
+
+    // Smooth scroll for all anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({
+                    behavior: 'smooth'
+                });
+            }
+        });
+    });
+
+    // Handle touch effects for mobile interactive states
+    document.querySelectorAll('.glass-card').forEach(card => {
+        card.addEventListener('touchstart', () => {}, {passive: true});
+    });
+</script>
+</body></html>
