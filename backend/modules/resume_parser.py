@@ -43,20 +43,20 @@ TECHNICAL_ROLE_TERMS = [
 ]
 
 
-def extract_text_from_pdf(filepath: str) -> str:
+import io
+
+def extract_text_from_pdf(filepath_or_bytes) -> str:
     """
-    Extracts text from a clear PDF file.
-    
-    Args:
-        filepath (str): Path to the PDF file.
-        
-    Returns:
-        str: Extracted text.
+    Extracts text from a PDF file path, raw bytes, or BytesIO stream.
     """
     extracted_text = ""
     try:
-        print(f"DEBUG: Opening PDF at {filepath}")
-        with pdfplumber.open(filepath) as pdf:
+        if isinstance(filepath_or_bytes, bytes):
+            stream = io.BytesIO(filepath_or_bytes)
+        else:
+            stream = filepath_or_bytes
+
+        with pdfplumber.open(stream) as pdf:
             print(f"DEBUG: PDF opened. Total pages: {len(pdf.pages)}")
             for i, page in enumerate(pdf.pages):
                 text = page.extract_text()

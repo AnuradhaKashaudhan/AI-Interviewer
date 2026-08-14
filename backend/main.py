@@ -12,6 +12,9 @@ from pathlib import Path
 from sqlalchemy.orm import Session
 import jwt
 
+import uuid
+from supabase import create_client, Client
+
 # Import database
 from database import engine, Base, get_db
 from models import User
@@ -24,8 +27,35 @@ from auth import (
     create_refresh_token, 
     get_current_user,
     REFRESH_SECRET_KEY,
+    SECRET_KEY,
     ALGORITHM
 )
+
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+
+def get_supabase_client() -> Optional[Client]:
+    if SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY and SUPABASE_URL.startswith("http"):
+        try:
+            return create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+        except Exception as e:
+            print(f"Error initializing Supabase client: {e}")
+    return None
+
+def get_optional_current_user(request: Request, db: Session = Depends(get_db)) -> Optional[User]:
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        return None
+    token = auth_header.split(" ")[1]
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: str = payload.get("sub")
+        if user_id:
+            return db.query(User).filter(User.id == user_id).first()
+    except Exception:
+        pass
+    return None
+
 
 # Create tables if they don't exist (useful since Docker/Alembic might not run)
 Base.metadata.create_all(bind=engine)
@@ -205,24 +235,48 @@ def logout(response: Response):
 
 
 @app.post("/api/upload-resume")
-def upload_resume(file: UploadFile = File(...)):
+def upload_resume(
+    request: Request,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
     print(f"Received resume upload: {file.filename}")
-    if not file.filename.endswith(".pdf"):
+    if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are supported.")
     
-    temp_dir = BASE_DIR / "data" / "resumes"
-    os.makedirs(temp_dir, exist_ok=True)
-    temp_file_path = os.path.join(temp_dir, file.filename)
+    current_user = get_optional_current_user(request, db)
+    user_id = current_user.id if current_user else "anonymous"
     
     try:
         content = file.file.read()
-        with open(temp_file_path, "wb") as buffer:
-            buffer.write(content)
-            
-        text = extract_text_from_pdf(temp_file_path)
+        if not content:
+            raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+
+        # 1. Upload original PDF to private Supabase Storage 'resumes' bucket
+        supabase = get_supabase_client()
+        if not supabase:
+            raise HTTPException(status_code=500, detail="Supabase Storage client is not configured.")
+        
+        unique_resume_id = uuid.uuid4().hex
+        storage_path = f"{user_id}/{unique_resume_id}.pdf"
+        
+        try:
+            supabase.storage.from_("resumes").upload(
+                path=storage_path,
+                file=content,
+                file_options={"content-type": "application/pdf", "upsert": "true"}
+            )
+            print(f"Successfully uploaded resume to Supabase Storage: resumes/{storage_path}")
+        except Exception as upload_err:
+            print(f"Supabase Storage upload failed: {str(upload_err)}")
+            raise HTTPException(status_code=500, detail=f"Failed to upload resume to Supabase Storage: {str(upload_err)}")
+
+        # 2. Extract text from in-memory PDF bytes
+        text = extract_text_from_pdf(content)
         if not text:
             raise HTTPException(status_code=400, detail="Could not extract text from the PDF.")
             
+        # 3. Extract skills & generate questions
         skills = extract_skills(text)
         questions = generate_questions(skills)
         coding_recommendation = detect_coding_round_recommendation(resume_text=text, role=None, skills=skills)
@@ -233,10 +287,14 @@ def upload_resume(file: UploadFile = File(...)):
             "extracted_text": text,
             "generated_questions": questions,
             "coding_round_recommendation": coding_recommendation,
+            "storage_path": f"resumes/{storage_path}"
         }
+    except HTTPException as he:
+        raise he
     except Exception as e:
         print(f"Error in upload-resume: {str(e)}")
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+
 
 @app.post("/api/evaluate-answer")
 def analyze_answer(request: AnswerRequest, db: Session = Depends(get_db)):
@@ -314,17 +372,26 @@ def api_submit_answer(
         if audio and not final_answer:
             temp_audio_dir = "data/recordings"
             os.makedirs(temp_audio_dir, exist_ok=True)
-            temp_audio_path = os.path.join(temp_audio_dir, audio.filename)
+            temp_filename = f"temp_{uuid.uuid4().hex}_{audio.filename}"
+            temp_audio_path = os.path.join(temp_audio_dir, temp_filename)
             
-            with open(temp_audio_path, "wb") as buffer:
-                buffer.write(audio.file.read())
-            
-            transcript = transcribe_audio(temp_audio_path)
-            if transcript.startswith("Error:"):
-                 raise HTTPException(status_code=500, detail=transcript)
-            
-            final_answer = transcript
-            transcribed_text = transcript
+            try:
+                with open(temp_audio_path, "wb") as buffer:
+                    buffer.write(audio.file.read())
+                
+                transcript = transcribe_audio(temp_audio_path)
+                if transcript.startswith("Error:"):
+                    raise HTTPException(status_code=500, detail=transcript)
+                
+                final_answer = transcript
+                transcribed_text = transcript
+            finally:
+                if temp_audio_path and os.path.exists(temp_audio_path):
+                    try:
+                        os.remove(temp_audio_path)
+                        print(f"Cleaned up temporary audio file: {temp_audio_path}")
+                    except Exception as clean_err:
+                        print(f"Error removing temp audio file {temp_audio_path}: {clean_err}")
             
         if not final_answer:
             raise HTTPException(status_code=400, detail="Answer or audio must be provided.")
