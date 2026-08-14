@@ -1,7 +1,19 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-})
+  server: {
+    proxy: {
+      // Proxy ALL /api requests to FastAPI backend.
+      // This avoids CORS entirely for same-origin requests from the browser.
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        secure: false,
+        // Needed so that Set-Cookie headers from FastAPI are forwarded to browser
+        cookieDomainRewrite: 'localhost',
+      },
+    },
+  },
+});

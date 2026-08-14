@@ -5,9 +5,11 @@
   "scripts": {
     "dev": "npm --prefix frontend run dev",
     "backend": "python backend/main.py",
+    "auth": "npm --prefix auth-server run dev",
     "install-frontend": "npm --prefix frontend install",
     "install-backend": "pip install -r requirements.txt",
-    "install-all": "npm run install-frontend && npm run install-backend"
+    "install-auth": "npm --prefix auth-server install",
+    "install-all": "npm run install-frontend && npm run install-backend && npm run install-auth"
   },
   "keywords": [
     "ai",

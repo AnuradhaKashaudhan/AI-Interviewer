@@ -10,3 +10,8 @@ sentence-transformers
 faster-whisper
 ctranslate2
 pyttsx3
+sqlalchemy
+alembic
+psycopg2-binary
+passlib[bcrypt]
+pyjwt

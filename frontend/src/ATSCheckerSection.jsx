@@ -11,17 +11,24 @@ import {
   TrendingUp,
   FileText,
   Target,
-  Zap
+  Zap,
+  PenTool
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import ATSParsingSequence from './components/ats/ATSParsingSequence.jsx';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
 
 const ATSCheckerSection = () => {
     const [resumeFile, setResumeFile] = useState(null);
     const [resumeText, setResumeText] = useState("");
     const [jobDescription, setJobDescription] = useState("");
+    const [phase, setPhase] = useState("idle"); // 'idle', 'parsing', 'results'
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [results, setResults] = useState(null);
     const [error, setError] = useState(null);
     const fileInputRef = useRef(null);
+    const navigate = useNavigate();
 
     const handleFileUpload = async (e) => {
         const file = e.target.files[0];
@@ -41,7 +48,7 @@ const ATSCheckerSection = () => {
         formData.append('file', file);
 
         try {
-            const response = await fetch('http://localhost:8000/api/upload-resume', {
+            const response = await fetch(`${API_BASE_URL}/api/upload-resume`, {
                 method: 'POST',
                 body: formData,
             });
@@ -81,7 +88,7 @@ const ATSCheckerSection = () => {
         setResults(null);
         
         try {
-            const response = await fetch('http://localhost:8000/api/check-ats', {
+            const response = await fetch(`${API_BASE_URL}/api/check-ats`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -94,9 +101,11 @@ const ATSCheckerSection = () => {
             
             const data = await response.json();
             setResults(data);
+            setPhase("parsing");
         } catch (err) {
             setError("ATS Analysis failed. Please try again.");
             console.error(err);
+            setPhase("idle");
         } finally {
             setIsAnalyzing(false);
         }
@@ -190,7 +199,7 @@ const ATSCheckerSection = () => {
                 <div className="lg:col-span-7">
                     <div className="card p-8 border-white/5 h-full relative overflow-hidden">
                         <AnimatePresence mode="wait">
-                            {!results && !isAnalyzing ? (
+                            {phase === "idle" ? (
                                 <motion.div 
                                     key="placeholder"
                                     initial={{ opacity: 0 }}
@@ -204,21 +213,20 @@ const ATSCheckerSection = () => {
                                     <h4 className="text-xl font-bold mb-2 text-white/40">No Analysis Yet</h4>
                                     <p className="text-text-muted max-w-xs">Upload your resume and click "Check ATS Score" to see your compatibility results.</p>
                                 </motion.div>
-                            ) : isAnalyzing ? (
+                            ) : phase === "parsing" ? (
                                 <motion.div 
-                                    key="loading"
+                                    key="parsing"
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
-                                    className="h-full flex flex-col items-center justify-center p-12"
+                                    exit={{ opacity: 0 }}
+                                    className="h-full relative overflow-hidden bg-white/40 rounded-2xl"
                                 >
-                                    <div className="relative mb-8">
-                                        <div className="w-24 h-24 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-                                        <div className="absolute inset-0 flex items-center justify-center">
-                                            <Sparkles className="w-8 h-8 text-primary animate-pulse" />
-                                        </div>
-                                    </div>
-                                    <h4 className="text-xl font-bold mb-2">AI is Analyzing...</h4>
-                                    <p className="text-text-muted">Extracting keywords and calculating matching patterns.</p>
+                                    {/* Shimmer pulse effect */}
+                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
+                                    <ATSParsingSequence 
+                                        results={results} 
+                                        onComplete={() => setPhase("results")} 
+                                    />
                                 </motion.div>
                             ) : (
                                 <motion.div 
@@ -229,23 +237,23 @@ const ATSCheckerSection = () => {
                                 >
                                     <div className="flex items-center justify-between flex-wrap gap-4">
                                         <div>
-                                            <h3 className="text-2xl font-bold mb-1">ATS Match Report</h3>
-                                            <p className="text-sm text-text-muted">Generated by AI Resume Optimizer</p>
+                                            <h3 className="display-title text-2xl mb-1">ATS Match Report</h3>
+                                            <p className="muted-copy text-sm">Generated by AI Resume Optimizer</p>
                                         </div>
                                         <div className="flex items-center gap-4">
                                             <div className="text-right">
-                                                <div className="text-[10px] font-bold text-text-muted uppercase">Overall Score</div>
-                                                <div className={`text-4xl font-black ${results.score >= 80 ? 'text-green-500' : results.score >= 60 ? 'text-yellow-500' : 'text-red-500'}`}>
+                                                <div className="section-eyebrow">Overall Score</div>
+                                                <div className={`text-4xl font-black ${results.score >= 80 ? 'text-emerald-700' : results.score >= 60 ? 'text-amber-800' : 'text-rose-700'}`}>
                                                     {results.score}%
                                                 </div>
                                             </div>
-                                            <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center relative overflow-hidden">
+                                            <div className="w-16 h-16 rounded-2xl bg-stone-50 border border-stone-200 flex items-center justify-center relative overflow-hidden">
                                                  <motion.div 
                                                     initial={{ height: 0 }} 
                                                     animate={{ height: `${results.score}%` }} 
-                                                    className={`absolute bottom-0 left-0 right-0 ${results.score >= 80 ? 'bg-green-500/20' : results.score >= 60 ? 'bg-yellow-500/20' : 'bg-red-500/20'}`}
+                                                    className={`absolute bottom-0 left-0 right-0 ${results.score >= 80 ? 'bg-emerald-100' : results.score >= 60 ? 'bg-amber-100' : 'bg-rose-100'}`}
                                                  />
-                                                 <TrendingUp className={`w-8 h-8 relative z-10 ${results.score >= 80 ? 'text-green-500' : results.score >= 60 ? 'text-yellow-500' : 'text-red-500'}`} />
+                                                 <TrendingUp className={`w-8 h-8 relative z-10 ${results.score >= 80 ? 'text-emerald-700' : results.score >= 60 ? 'text-amber-800' : 'text-rose-700'}`} />
                                             </div>
                                         </div>
                                     </div>
@@ -253,29 +261,29 @@ const ATSCheckerSection = () => {
                                     {/* Detailed breakdown */}
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-4">
-                                            <div className="text-xs font-bold text-text-muted uppercase tracking-widest flex items-center gap-2">
-                                                <CheckCircle2 className="w-3 h-3 text-green-500" /> Key Strengths
+                                            <div className="section-eyebrow flex items-center gap-2">
+                                                <CheckCircle2 className="w-3 h-3 text-emerald-700" /> Key Strengths
                                             </div>
                                             <div className="space-y-2">
                                                 {results.strengths.map((s, i) => (
-                                                    <div key={i} className="p-3 bg-green-500/5 border border-green-500/10 rounded-xl text-xs text-green-500 flex items-start gap-2">
-                                                        <div className="w-1 h-1 bg-green-500 rounded-full mt-1.5 flex-shrink-0" />
+                                                    <div key={i} className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 flex items-start gap-2">
+                                                        <div className="w-1 h-1 bg-emerald-700 rounded-full mt-1.5 flex-shrink-0" />
                                                         {s}
                                                     </div>
                                                 ))}
                                             </div>
                                         </div>
                                         <div className="space-y-4">
-                                            <div className="text-xs font-bold text-text-muted uppercase tracking-widest flex items-center gap-2">
-                                                <AlertCircle className="w-3 h-3 text-yellow-500" /> Missing Keywords
+                                            <div className="section-eyebrow flex items-center gap-2">
+                                                <AlertCircle className="w-3 h-3 text-amber-800" /> Missing Keywords
                                             </div>
                                             <div className="flex flex-wrap gap-2">
                                                 {results.missing_keywords.length > 0 ? results.missing_keywords.map((k, i) => (
-                                                    <span key={i} className="px-2 py-1 bg-white/5 border border-white/10 rounded-lg text-xs text-text-muted">
+                                                    <span key={i} className="px-2 py-1 bg-white border border-stone-200 rounded-lg text-xs text-slate-600">
                                                         {k}
                                                     </span>
                                                 )) : (
-                                                    <p className="text-xs text-text-muted italic">No critical keywords missing.</p>
+                                                    <p className="text-xs text-slate-500 italic">No critical keywords missing.</p>
                                                 )}
                                             </div>
                                         </div>
@@ -283,30 +291,40 @@ const ATSCheckerSection = () => {
 
                                     {/* Improvement Suggestions */}
                                     <div className="space-y-4">
-                                        <div className="text-xs font-bold text-text-muted uppercase tracking-widest">Recommended Improvements</div>
+                                        <div className="section-eyebrow">Recommended Improvements</div>
                                         <div className="grid grid-cols-1 gap-3">
                                             {results.improvement_suggestions.map((inv, i) => (
-                                                <div key={i} className="p-4 bg-primary/5 border border-primary/10 rounded-2xl flex items-center justify-between group hover:border-primary/30 transition-all">
+                                                <div key={i} className="p-4 bg-stone-50 border border-stone-200 rounded-2xl flex items-center justify-between group hover:border-stone-300 transition-all">
                                                     <div className="flex items-center gap-4">
-                                                        <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                                                        <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-[#16324f] border border-stone-200 group-hover:scale-110 transition-transform">
                                                             <Sparkles className="w-5 h-5" />
                                                         </div>
-                                                        <span className="text-sm font-medium text-white/90">{inv}</span>
+                                                        <span className="text-sm font-medium text-slate-700">{inv}</span>
                                                     </div>
-                                                    <ArrowRight className="w-4 h-4 text-primary opacity-0 group-hover:opacity-100 transition-all translate-x-[-10px] group-hover:translate-x-0" />
+                                                    <ArrowRight className="w-4 h-4 text-[#16324f] opacity-0 group-hover:opacity-100 transition-all translate-x-[-10px] group-hover:translate-x-0" />
                                                 </div>
                                             ))}
                                             {results.feedback.map((f, i) => (
-                                                <div key={`f-${i}`} className="p-4 bg-white/5 border border-white/10 rounded-2xl text-xs text-text-muted">
+                                                <div key={`f-${i}`} className="p-4 bg-white border border-stone-200 rounded-2xl text-xs text-slate-600">
                                                     {f}
                                                 </div>
                                             ))}
                                         </div>
                                     </div>
 
-                                    <div className="pt-6 border-t border-white/10 flex justify-between items-center">
-                                        <p className="text-xs text-text-muted italic">Want a full resume rewrite? <span className="text-primary font-bold cursor-pointer hover:underline">Upgrade to Pro</span></p>
-                                        <button onClick={() => setResults(null)} className="text-xs font-bold text-text-muted hover:text-white transition-colors">Reset Analysis</button>
+                                    <div className="pt-6 border-t border-stone-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+                                        <button 
+                                            onClick={() => navigate('/ats-checker/fix', { state: { resumeText, jobDescription, atsResults: results } })}
+                                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#16324f] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#0f2438]"
+                                        >
+                                            <PenTool className="w-4 h-4" />
+                                            Fix My Resume
+                                            <ArrowRight className="w-4 h-4 ml-1" />
+                                        </button>
+                                        <div className="flex items-center gap-4">
+                                            <p className="text-xs text-slate-500 italic hidden md:block">Want a full rewrite? <span className="text-[#16324f] font-bold cursor-pointer hover:underline">Upgrade to Pro</span></p>
+                                            <button onClick={() => { setResults(null); setPhase("idle"); }} className="text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors whitespace-nowrap">Reset Analysis</button>
+                                        </div>
                                     </div>
                                 </motion.div>
                             )}

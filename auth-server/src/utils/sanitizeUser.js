@@ -1,0 +1,16 @@
+export const sanitizeUser = (user) => ({
+  id: String(user.id || user._id),
+  fullName: user.fullName,
+  email: user.email,
+  phoneNumber: user.phoneNumber,
+  collegeName: user.collegeName || '',
+  userType: user.userType || 'professional',
+  year: user.year || '',
+  course: user.course || '',
+  github: user.github || '',
+  linkedin: user.linkedin || '',
+  leetcode: user.leetcode || '',
+  profileCompleted: Boolean(user.profileCompleted),
+  createdAt: user.createdAt,
+  updatedAt: user.updatedAt,
+});
