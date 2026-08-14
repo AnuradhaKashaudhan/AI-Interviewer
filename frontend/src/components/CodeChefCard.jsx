@@ -21,10 +21,13 @@ import { getAuthToken } from '../services/authApi.js';
 
 function cleanCodeChefUsername(input) {
   if (!input) return '';
-  let str = input.trim().replace(/\/+$/, '');
-  str = str.replace(/^(https?:\/\/)?(www\.)?codechef\.com\/(users\/)?/i, '');
-  str = str.replace(/^@/, '');
-  return str;
+  let str = input.trim();
+  str = str.split('?')[0].split('#')[0];
+  str = str.replace(/\/+$/, '');
+  str = str.replace(/^(https?:\/\/)?(www\.)?codechef\.com\/?/i, '');
+  str = str.replace(/^(users|user|profile|u)\//i, '');
+  str = str.replace(/^[@/]+/, '');
+  return str.replace(/\/+$/, '').trim();
 }
 
 async function apiCall(path, method = 'GET', body = null) {

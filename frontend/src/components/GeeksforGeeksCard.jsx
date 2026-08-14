@@ -20,10 +20,13 @@ import { getAuthToken } from '../services/authApi.js';
 
 function cleanGFGUsername(input) {
   if (!input) return '';
-  let str = input.trim().replace(/\/+$/, '');
-  str = str.replace(/^(https?:\/\/)?(www\.)?geeksforgeeks\.org\/(user\/)?/i, '');
-  str = str.replace(/^@/, '');
-  return str;
+  let str = input.trim();
+  str = str.split('?')[0].split('#')[0];
+  str = str.replace(/\/+$/, '');
+  str = str.replace(/^(https?:\/\/)?(www\.)?geeksforgeeks\.org\/?/i, '');
+  str = str.replace(/^(user|profile|u)\//i, '');
+  str = str.replace(/^[@/]+/, '');
+  return str.replace(/\/+$/, '').trim();
 }
 
 function timeAgo(isoString) {

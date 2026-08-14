@@ -41,6 +41,19 @@ WEIGHT_ACCOUNT_AGE = 5
 # Helpers
 # ---------------------------------------------------------------------------
 
+def clean_username(username: str) -> str:
+    """Sanitize input username or profile URL to pure handle."""
+    if not username:
+        return ""
+    import re
+    u = username.strip()
+    u = u.split("?")[0].split("#")[0]
+    u = re.sub(r'^(https?://)?(www\.)?[^/]+/', '', u, flags=re.IGNORECASE)
+    u = re.sub(r'^(user|profile|users|u)/', '', u, flags=re.IGNORECASE)
+    u = u.strip('@/').rstrip('/')
+    return u
+
+
 def _build_headers() -> dict:
     """Return auth headers if GITHUB_TOKEN is available."""
     token = os.environ.get("GITHUB_TOKEN", "").strip()
@@ -577,6 +590,7 @@ def compute_codechef_score(stats: dict) -> float:
 
 async def sync_platform_profile(db: Session, user_id: str, platform: str, username: str) -> CodingProfile:
     platform = platform.lower().strip()
+    username = clean_username(username)
     if platform == "github":
         stats = await fetch_github_stats(username)
         score = compute_github_score(stats)

@@ -23,10 +23,13 @@ import { getAuthToken } from '../services/authApi.js';
 
 function cleanLeetCodeUsername(input) {
   if (!input) return '';
-  let str = input.trim().replace(/\/+$/, '');
-  str = str.replace(/^(https?:\/\/)?(www\.)?leetcode\.com\/(u\/)?/i, '');
-  str = str.replace(/^@/, '');
-  return str;
+  let str = input.trim();
+  str = str.split('?')[0].split('#')[0];
+  str = str.replace(/\/+$/, '');
+  str = str.replace(/^(https?:\/\/)?(www\.)?leetcode\.com\/?/i, '');
+  str = str.replace(/^(u|profile|user)\//i, '');
+  str = str.replace(/^[@/]+/, '');
+  return str.replace(/\/+$/, '').trim();
 }
 
 function timeAgo(isoString) {
