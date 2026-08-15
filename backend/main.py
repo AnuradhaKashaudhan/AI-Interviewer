@@ -72,6 +72,7 @@ from modules.ats_checker import check_ats_score
 
 # Import routers
 from routers.coding_profile import router as coding_profile_router
+from ml.predictor import get_predictor
 
 BASE_DIR = Path(__file__).resolve().parent
 app = FastAPI(title="AI Mock Interviewer API", description="API for the AI Personalized Mock Interview Coach")
@@ -101,6 +102,10 @@ class SessionRequest(BaseModel):
     session_id: str
 
 class ATSRequest(BaseModel):
+    resume_text: str
+    job_description: Optional[str] = None
+
+class MLMatchRequest(BaseModel):
     resume_text: str
     job_description: Optional[str] = None
 
@@ -448,6 +453,19 @@ def api_ats_recheck(request: ATSRequest):
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error rechecking ATS: {str(e)}")
+
+@app.post("/api/ml/resume-job-match")
+def api_ml_resume_job_match(request: MLMatchRequest):
+    """
+    ML Resume-Job Domain Matching prediction endpoint using fine-tuned DistilBERT / baseline model.
+    Predicts whether resume and job description belong to the same professional domain.
+    """
+    try:
+        predictor = get_predictor()
+        result = predictor.predict(request.resume_text, request.job_description)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error in ML resume-job match model: {str(e)}")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

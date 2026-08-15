@@ -50,11 +50,18 @@ backend/data/**
 # Models
 models/*
 !models/.gitkeep
+backend/ml/models/*
+!backend/ml/models/.gitkeep
+data/cache/
+data/dataset/
 *.pt
 *.pth
 *.h5
 *.onnx
 *.safetensors
+*.bin
+*.pickle
+*.pkl
 
 # Frontend builds/Dependencies
 node_modules/

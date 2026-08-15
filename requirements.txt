@@ -16,3 +16,9 @@ psycopg2-binary
 passlib[bcrypt]
 pyjwt
 supabase
+torch
+transformers
+datasets
+scikit-learn
+accelerate
+

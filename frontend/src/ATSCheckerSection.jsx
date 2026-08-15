@@ -26,6 +26,7 @@ const ATSCheckerSection = () => {
     const [phase, setPhase] = useState("idle"); // 'idle', 'parsing', 'results'
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [results, setResults] = useState(null);
+    const [mlResult, setMlResult] = useState(null);
     const [error, setError] = useState(null);
     const fileInputRef = useRef(null);
     const navigate = useNavigate();
@@ -42,7 +43,6 @@ const ATSCheckerSection = () => {
         setResumeFile(file);
         setError(null);
         
-        // Use existing endpoint to extract text
         setIsAnalyzing(true);
         const formData = new FormData();
         formData.append('file', file);
@@ -56,23 +56,18 @@ const ATSCheckerSection = () => {
             if (!response.ok) throw new Error("Failed to parse PDF");
             
             const data = await response.json();
-            // We'll need the text for the ATS check
-            // For now, let's assume the upload-resume endpoint can be modified or we use the skills it returns
-            // Actually, let's modify main.py to return the full text in upload-resume if we need it
-            // Or just use the skills. But ATS needs full text for better scoring.
-            
             if (!data.extracted_text) {
                 setError("Could not extract any text from the PDF. Is it a scanned image?");
                 setResumeText("");
             } else {
                 setResumeText(data.extracted_text);
-                setError(null); // Clear previous errors on success
+                setError(null);
             }
             
         } catch (err) {
             setError("Error connecting to the backend. Please ensure the server is running.");
             console.error(err);
-            setResumeFile(null); // Reset file so they can retry
+            setResumeFile(null);
         } finally {
             setIsAnalyzing(false);
         }
@@ -86,21 +81,41 @@ const ATSCheckerSection = () => {
 
         setIsAnalyzing(true);
         setResults(null);
+        setMlResult(null);
         
         try {
-            const response = await fetch(`${API_BASE_URL}/api/check-ats`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    resume_text: resumeText,
-                    job_description: jobDescription
+            const [atsResponse, mlResponse] = await Promise.all([
+                fetch(`${API_BASE_URL}/api/check-ats`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        resume_text: resumeText,
+                        job_description: jobDescription
+                    })
+                }),
+                fetch(`${API_BASE_URL}/api/ml/resume-job-match`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        resume_text: resumeText,
+                        job_description: jobDescription
+                    })
+                }).catch(err => {
+                    console.error("ML Match endpoint error:", err);
+                    return null;
                 })
-            });
+            ]);
             
-            if (!response.ok) throw new Error("ATS Check failed");
+            if (!atsResponse.ok) throw new Error("ATS Check failed");
             
-            const data = await response.json();
-            setResults(data);
+            const atsData = await atsResponse.json();
+            setResults(atsData);
+
+            if (mlResponse && mlResponse.ok) {
+                const mlData = await mlResponse.json();
+                setMlResult(mlData);
+            }
+
             setPhase("parsing");
         } catch (err) {
             setError("ATS Analysis failed. Please try again.");
@@ -257,6 +272,39 @@ const ATSCheckerSection = () => {
                                             </div>
                                         </div>
                                     </div>
+
+                                    {/* AI/ML Domain Match Intelligence Layer */}
+                                    {mlResult && (
+                                        <div className="p-5 rounded-2xl bg-gradient-to-r from-slate-900 to-indigo-950 text-white border border-indigo-500/30 shadow-xl space-y-3">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <Sparkles className="w-5 h-5 text-indigo-400" />
+                                                    <h4 className="font-bold text-sm text-indigo-200 uppercase tracking-wider">AI/ML Resume–Job Match</h4>
+                                                </div>
+                                                <span className="text-[10px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2.5 py-1 rounded-full font-mono">
+                                                    {mlResult.model || 'TF-IDF Baseline'}
+                                                </span>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4 pt-1">
+                                                <div className="p-3 bg-white/5 rounded-xl border border-white/10">
+                                                    <div className="text-xs text-slate-400">Domain Classification</div>
+                                                    <div className={`text-base font-bold mt-1 ${mlResult.prediction === 1 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                                                        {mlResult.label || (mlResult.prediction === 1 ? 'Same Domain' : 'Cross Domain')}
+                                                    </div>
+                                                </div>
+                                                <div className="p-3 bg-white/5 rounded-xl border border-white/10">
+                                                    <div className="text-xs text-slate-400">Match Probability</div>
+                                                    <div className="text-base font-black text-indigo-300 mt-1">
+                                                        {Math.round((mlResult.match_probability || 0) * 100)}%
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <p className="text-[11px] text-slate-400 italic">
+                                                Deep NLP model evaluating semantic domain compatibility between resume & target job.
+                                            </p>
+                                        </div>
+                                    )}
 
                                     {/* Detailed breakdown */}
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
