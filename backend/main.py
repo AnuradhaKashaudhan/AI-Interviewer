@@ -468,4 +468,4 @@ def api_ml_resume_job_match(request: MLMatchRequest):
         raise HTTPException(status_code=500, detail=f"Error in ML resume-job match model: {str(e)}")
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="127.0.0.1", port=8000)

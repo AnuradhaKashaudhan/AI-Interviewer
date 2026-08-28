@@ -96,9 +96,12 @@ export function runClientHeuristics(resumeText, jobDescription = "", previousRes
         issues.push({
           id: `client-issue-${issueId}`,
           type: "weak_verb",
+          title: `Weak Action Verb: '${weak}'`,
           severity: "warning",
           line_text: lineStripped,
-          suggestion: suggestion,
+          replacement_text: suggestion,
+          evidence: `Bullet uses passive/weak phrasing '${weak}'`,
+          suggestion: `Make this bullet outcome-oriented by replacing '${weak}' with '${strong}': "${suggestion}"`,
           section: guessSection(lineStripped, lines),
           rule: "weak_verb_detection",
           message: `Weak verb detected: "${weak}". Use a stronger action verb like "${strong}".`,
@@ -106,6 +109,61 @@ export function runClientHeuristics(resumeText, jobDescription = "", previousRes
       }
     }
   });
+
+function generateBulletMetricSuggestion(lineText) {
+  const lineClean = (lineText || '').replace(/\s*\((add specific numbers|reduced load time by 40%|add numbers|add specific numbers[^\)]*)\)/gi, '').trim();
+  const lineLower = lineClean.toLowerCase();
+  const snippetClean = lineClean.replace(/^[-•*–►]\s*/, '');
+  const snippetDisp = snippetClean.length > 45 ? snippetClean.substring(0, 45) + "..." : snippetClean;
+
+  // 1. Civic / Platform / Reporting / Geolocation / Voice / Multi-modal
+  if (["civic", "platform", "geolocation", "submission", "multi-modal", "reporting"].some(k => lineLower.includes(k))) {
+    return `For this platform bullet ('${snippetDisp}'), consider adding real scale or usage metrics if available, such as number of active users/citizens, total issue submissions handled, or geolocation input accuracy.`;
+  }
+
+  // 2. Automation / LLM / Classification / Routing / NLP
+  if (["llm", "classification", "routing", "automated", "automation", "nlp"].some(k => lineLower.includes(k))) {
+    return `For this AI/automation bullet ('${snippetDisp}'), consider quantifying impact if you have real data, such as classification accuracy rate, volume of complaints processed, or percentage reduction in manual routing time.`;
+  }
+
+  // 3. Google Maps / Visualization / Dashboards / GIS / Mapping
+  if (["maps", "gis", "visualization", "dashboard", "dashboards", "tracking"].some(k => lineLower.includes(k))) {
+    return `For this visualization task ('${snippetDisp}'), consider adding metrics if available, such as number of map locations/issues rendered, dashboard refresh frequency, or active user count.`;
+  }
+
+  // 4. Cloud / DevOps / CI/CD / Docker / Kubernetes / Deployment / Infrastructure
+  if (/\b(cloud|aws|gcp|azure|docker|kubernetes|k8s|ci\/cd|pipeline|deploy|deployment|infrastructure|terraform|devops|serverless)\b/i.test(lineLower)) {
+    return `For this DevOps bullet ('${snippetDisp}'), consider adding relevant cloud metrics if available, such as deployment frequency, pipeline execution time, infrastructure cost savings, or uptime SLA.`;
+  }
+
+  // 5. Security / Auth / Vulnerabilities / Audits / OAuth
+  if (/\b(security|secure|auth|authentication|oauth|jwt|encryption|vulnerability|vulnerabilities|pentest|compliance|audit)\b/i.test(lineLower)) {
+    return `For this security bullet ('${snippetDisp}'), consider quantifying with metrics if available, such as vulnerabilities remediated, security test coverage percentage, or audit compliance pass rate.`;
+  }
+
+  // 6. Backend / REST APIs / Databases / Microservices
+  if (/\b(api|apis|rest|fastapi|django|express|backend|microservice|microservices|database|sql|postgresql|query|queries|latency|throughput)\b/i.test(lineLower)) {
+    return `For this backend bullet ('${snippetDisp}'), consider adding relevant backend metrics if available, such as number of API endpoints built, response latency reduction, throughput (req/sec), or query optimization speed.`;
+  }
+
+  // 7. Frontend / UI / UX / Components / Web / Mobile
+  if (/\b(ui|ux|frontend|component|components|react|vue|css|tailwind|responsive|page|pages|web|mobile|accessibility)\b/i.test(lineLower)) {
+    return `For this UI bullet ('${snippetDisp}'), consider adding relevant metrics if available, such as page load speedup, number of reusable components, accessibility score, or user engagement.`;
+  }
+
+  // 8. Data / ML / AI / Data Pipelines
+  if (/\b(data|machine learning|ml|ai|model|accuracy|dataset|pandas|spark|analytics|prediction|training)\b/i.test(lineLower)) {
+    return `For this ML/data bullet ('${snippetDisp}'), consider adding model metrics if available, such as model evaluation accuracy, dataset scale (rows/GBs processed), or inference speed.`;
+  }
+
+  // 9. Collaboration / Git / Agile / Mentoring
+  if (/\b(git|agile|scrum|team|collaborated|collaborate|mentor|mentored|pr|pull request|reviews|review|workflow)\b/i.test(lineLower)) {
+    return `For this workflow bullet ('${snippetDisp}'), consider adding collaboration metrics if available, such as team size, sprint velocity, number of PRs reviewed, or release frequency.`;
+  }
+
+  // 10. Default Fallback
+  return `For this bullet ('${snippetDisp}'), consider adding relevant outcome metrics if you have verified data (such as volume processed, percentage efficiency gain, or completion timeframe).`;
+}
 
   // 2. Missing metrics
   lines.forEach((line) => {
@@ -122,15 +180,18 @@ export function runClientHeuristics(resumeText, jobDescription = "", previousRes
       else if (hasNumber) metricCount += 0.5; // partial credit
       else if (lineStripped.length > 30) {
         issueId++;
+        const snippet = lineStripped.length > 35 ? lineStripped.substring(0, 35) + "..." : lineStripped;
         issues.push({
           id: `client-issue-${issueId}`,
           type: "missing_metric",
+          title: `Unquantified Impact: '${snippet}'`,
           severity: "error",
           line_text: lineStripped,
-          suggestion: lineStripped + " (add specific numbers, e.g., 'reduced load time by 40%')",
+          evidence: `Bullet point '${snippet}' describes a task without measurable outcomes or numbers.`,
+          suggestion: generateBulletMetricSuggestion(lineStripped),
           section: guessSection(lineStripped, lines),
           rule: "missing_metric",
-          message: "This bullet point lacks quantifiable metrics. Add numbers to strengthen impact.",
+          message: `Bullet '${snippet}' lacks quantifiable metrics. Add numbers to strengthen impact.`,
         });
       }
     }
@@ -151,9 +212,11 @@ export function runClientHeuristics(resumeText, jobDescription = "", previousRes
         issues.push({
           id: `client-issue-${issueId}`,
           type: "filler_phrase",
+          title: `Generic Filler Phrase: '${filler}'`,
           severity: "info",
           line_text: lineStripped,
-          suggestion: cleaned || "(Remove this line entirely)",
+          evidence: `Contains generic buzzword '${filler}'`,
+          suggestion: cleaned ? `Replace generic buzzword '${filler}' with specific achievements: "${cleaned}"` : "(Remove this generic line entirely)",
           section: guessSection(lineStripped, lines),
           rule: "filler_detection",
           message: `Generic filler phrase: "${filler}". Replace with specific, measurable achievements.`,
@@ -163,6 +226,15 @@ export function runClientHeuristics(resumeText, jobDescription = "", previousRes
   });
 
   // 4. Missing Sections (critical ones)
+  const sectionAdvice = {
+    "Projects": "Add a Projects section containing 2–3 relevant projects. For each project, mention the problem solved, technologies used, and your contribution.",
+    "Certifications": "Add a Certifications section and list relevant certifications with the certification name, issuing organization, and year.",
+    "Education": "Add your degree, university/institution, graduation year or expected graduation year, and relevant academic details.",
+    "Experience": "Add an Experience section outlining your past employment, core responsibilities, key projects, and accomplishments.",
+    "Skills": "Add a dedicated Skills section categorizing your technical languages, frameworks, databases, and core tools.",
+    "Contact": "Add a Contact header at the top of your resume containing your name, email, phone, location, and professional links."
+  };
+
   const coreSections = ["Experience", "Education", "Skills", "Projects", "Contact"];
   coreSections.forEach(sectionName => {
     if (!sectionsFound.includes(sectionName)) {
@@ -170,9 +242,11 @@ export function runClientHeuristics(resumeText, jobDescription = "", previousRes
       issues.push({
         id: `client-issue-${issueId}`,
         type: "section_missing",
+        title: `Missing ${sectionName} Section`,
         severity: "error",
         line_text: "",
-        suggestion: `Add a clearly labeled '${sectionName}' section to your resume.`,
+        evidence: `No '${sectionName}' section header detected in resume markup.`,
+        suggestion: sectionAdvice[sectionName] || `Add a clearly labeled '${sectionName}' section to your resume.`,
         section: sectionName,
         rule: "section_completeness",
         message: `Missing or unclear "${sectionName}" section.`,

@@ -135,8 +135,9 @@ const FixItScorecard = ({
                                  issue.severity === 'warning' ? <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" /> :
                                  <CheckCircle2 className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />}
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-[13px] font-semibold text-slate-800 truncate">{issue.message}</p>
-                                    <p className="text-[11px] text-slate-500 mt-0.5 font-mono truncate">{issue.section}</p>
+                                    <p className="text-[13px] font-bold text-slate-800 truncate">{issue.title || issue.message}</p>
+                                    <p className="text-[11px] text-slate-600 line-clamp-2 mt-0.5">{issue.evidence || issue.suggestion || issue.message}</p>
+                                    <span className="inline-block text-[10px] text-indigo-600 bg-indigo-50 font-semibold px-2 py-0.5 rounded mt-1">{issue.section || 'General'}</span>
                                 </div>
                                 <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500 opacity-0 group-hover:opacity-100 transition-all transform translate-x-[-5px] group-hover:translate-x-0" />
                             </motion.div>

@@ -84,7 +84,7 @@ const AppShell = () => {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_#fff9ef_0%,_#f7f1e7_44%,_#f0eadf_100%)] text-slate-900">
-      <aside className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-40 lg:flex lg:w-80 lg:flex-col lg:border-r lg:border-stone-200 lg:bg-[#fcf8f0]/92 lg:backdrop-blur-xl">
+      <aside className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-40 lg:flex lg:w-80 lg:flex-col lg:border-r lg:border-stone-200 lg:bg-[#fcf8f0]/96 lg:backdrop-blur-md">
         <div className="flex h-full flex-col px-5 py-6">
           <button
             type="button"
@@ -195,7 +195,7 @@ const AppShell = () => {
       </aside>
 
       <div className="lg:pl-80">
-        <header className="sticky top-0 z-30 border-b border-stone-200 bg-[#fcf8f0]/90 backdrop-blur-xl">
+        <header className="sticky top-0 z-30 border-b border-stone-200 bg-[#fcf8f0]/95 backdrop-blur-md">
           <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
             <div className="flex items-center gap-3">
               <button

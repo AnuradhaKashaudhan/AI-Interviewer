@@ -73,7 +73,7 @@ const LoginPage = () => {
               type="email"
               value={form.email}
               onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
-              className="field-control w-full pl-11"
+              className="field-control w-full !pl-12"
               placeholder="name@company.com"
             />
           </div>
@@ -88,7 +88,7 @@ const LoginPage = () => {
               type="password"
               value={form.password}
               onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
-              className="field-control w-full pl-11"
+              className="field-control w-full !pl-12"
               placeholder="Your password"
             />
           </div>

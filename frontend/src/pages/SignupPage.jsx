@@ -68,7 +68,7 @@ const SignupPage = () => {
             <input
               value={form.fullName}
               onChange={(event) => setForm((current) => ({ ...current, fullName: event.target.value }))}
-              className="field-control w-full pl-11"
+              className="field-control w-full !pl-12"
               placeholder="Your full name"
             />
           </div>
@@ -83,7 +83,7 @@ const SignupPage = () => {
               type="email"
               value={form.email}
               onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
-              className="field-control w-full pl-11"
+              className="field-control w-full !pl-12"
               placeholder="name@company.com"
             />
           </div>
@@ -91,14 +91,14 @@ const SignupPage = () => {
         </label>
 
         <label className="block">
-          <span className="field-label">Phone number</span>
+          <span className="field-label">Phone number (SMS OTP)</span>
           <div className="relative">
             <Phone className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               value={form.phoneNumber}
               onChange={(event) => setForm((current) => ({ ...current, phoneNumber: event.target.value }))}
-              className="field-control w-full pl-11"
-              placeholder="+1 555 123 4567"
+              className="field-control w-full !pl-12"
+              placeholder="+91 98765 43210"
             />
           </div>
           {errors.phoneNumber && <div className="mt-2 text-sm text-rose-700">{errors.phoneNumber}</div>}
@@ -113,7 +113,7 @@ const SignupPage = () => {
                 type="password"
                 value={form.password}
                 onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
-                className="field-control w-full pl-11"
+                className="field-control w-full !pl-12"
                 placeholder="Minimum 8 characters"
               />
             </div>
@@ -128,7 +128,7 @@ const SignupPage = () => {
                 type="password"
                 value={form.confirmPassword}
                 onChange={(event) => setForm((current) => ({ ...current, confirmPassword: event.target.value }))}
-                className="field-control w-full pl-11"
+                className="field-control w-full !pl-12"
                 placeholder="Repeat your password"
               />
             </div>

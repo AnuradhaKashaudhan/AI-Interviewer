@@ -36,7 +36,10 @@ const ATSFixItPage = () => {
     
     const { resumeText: initialText, jobDescription: initialJd, atsResults } = location.state;
     
-    setResumeText(initialText);
+    const rawInitialText = initialText || "";
+    const cleanInitialText = rawInitialText.replace(/\s*\((add specific numbers|reduced load time by 40%|add numbers|add specific numbers[^\)]*)\)/gi, '');
+    
+    setResumeText(cleanInitialText);
     setJobDescription(initialJd || "");
     setServerResults(atsResults);
     
@@ -49,7 +52,7 @@ const ATSFixItPage = () => {
     
     // If the backend didn't send issues (e.g. old backend version), fallback to client
     if (initialIssues.length === 0) {
-        const clientResults = runClientHeuristics(initialText, initialJd, atsResults);
+        const clientResults = runClientHeuristics(cleanInitialText, initialJd, atsResults);
         initialIssues = clientResults.issues;
         setSubScores(clientResults.sub_scores);
     }
@@ -93,35 +96,36 @@ const ATSFixItPage = () => {
 
   // Handle applying a fix
   const handleApplyFix = (issue) => {
-    if (!resumeText || !issue.line_text) return;
+    if (!resumeText || !issue) return;
     
-    // 1. Update text locally
-    // If we have a suggestion, use it. Otherwise just return for now.
-    if (!issue.suggestion) return;
-    
-    // Simple text replacement. In a richer editor, this would need careful offset management.
     let newText = resumeText;
     
-    // If suggestion indicates removal
-    if (issue.suggestion.includes("(Remove this line entirely)")) {
-        newText = newText.replace(issue.line_text, "");
+    // Perform text replacement ONLY for specific actionable issue types with valid replacements.
+    if (issue.type === 'weak_verb' && issue.replacement_text) {
+        newText = newText.replace(issue.line_text, issue.replacement_text);
+    } else if (issue.type === 'filler_phrase') {
+        if (issue.suggestion.includes("(Remove this line entirely)") || !issue.replacement_text) {
+            newText = newText.replace(issue.line_text, "");
+        } else {
+            newText = newText.replace(issue.line_text, issue.replacement_text);
+        }
     } else {
-        newText = newText.replace(issue.line_text, issue.suggestion);
+        // For missing_metric or general advice issues, NEVER append advice text into resumeText.
+        // Dismiss the issue prompt from the active scorecard list so the user can edit manually.
+        setIssues(prev => prev.filter(i => i.id !== issue.id));
+        return;
     }
     
     setResumeText(newText);
     
-    // 2. Instantly run client heuristics for snappiness
+    // Instantly run client heuristics for snappiness
     const clientResults = runClientHeuristics(newText, jobDescription, serverResults);
     
     setPreviousScore(currentScore);
     setCurrentScore(clientResults.score);
     setSubScores(clientResults.sub_scores);
-    
-    // We don't fully replace issues yet to avoid jank, just remove the one we fixed locally
     setIssues(prev => prev.filter(i => i.id !== issue.id));
     
-    // 3. Debounce the server call
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     debounceTimer.current = setTimeout(() => {
         runServerRecheck(newText);

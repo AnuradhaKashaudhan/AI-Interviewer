@@ -33,18 +33,18 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     silentRefresh();
-    
+
     // Setup silent refresh before token expires (e.g. 14 mins for a 15 min token)
     const interval = setInterval(() => {
       if (getAuthToken()) {
         authApi.refresh().then(handleAuthResponse).catch(() => {
-           setToken(null);
-           setAuthToken(null);
-           setUser(null);
+          setToken(null);
+          setAuthToken(null);
+          setUser(null);
         });
       }
     }, 14 * 60 * 1000);
-    
+
     return () => clearInterval(interval);
   }, []);
 

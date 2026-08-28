@@ -7,7 +7,7 @@ import torch
 import numpy as np
 from datasets import load_dataset
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix, classification_report
 from transformers import (
     AutoTokenizer,
     AutoModelForSequenceClassification,
@@ -40,12 +40,26 @@ def compute_metrics(eval_pred):
     }
 
 def train_distilbert():
-    print("--- Phase 10: Training Fine-Tuned DistilBERT Model ---")
+    print("--- Phase 10: Training & Diagnosing Fine-Tuned DistilBERT Model ---")
 
     print(f"Loading dataset '{DATASET_NAME}'...")
     raw_ds = load_dataset(DATASET_NAME)
     primary_split = list(raw_ds.keys())[0]
     df = raw_ds[primary_split].to_pandas()
+
+    # Pre-extract paired resume & job strings
+    resumes = []
+    jobs = []
+    for text in df['text']:
+        if isinstance(text, str) and '[SEP]' in text:
+            parts = text.split('[SEP]', 1)
+            resumes.append(parts[0].strip())
+            jobs.append(parts[1].strip())
+        else:
+            resumes.append(str(text).strip())
+            jobs.append("")
+    df['resume_text'] = resumes
+    df['job_description'] = jobs
 
     # Hardware detection & CPU Configuration Scaling
     if torch.cuda.is_available():
@@ -64,14 +78,13 @@ def train_distilbert():
         subset_df = df
     else:
         device_str = "CPU Only"
-        batch_size = 8
+        batch_size = 16
         use_fp16 = False
-        num_epochs = 1
-        max_seq_length = 128  # 16x speedup on CPU for quadratic self-attention
-        print("WARNING: Training on CPU may take significantly longer. Recommended to use GPU if available.")
-        print("Applying CPU hardware safety configuration: max_length=128, stratified 500 sample subset (400 train / 100 val).")
-        # Stratified sampling for fast CPU fine-tuning
-        subset_df, _ = train_test_split(df, train_size=500, random_state=42, stratify=df['label'])
+        num_epochs = 2
+        max_seq_length = 128  # Fast CPU sequence pair tokenization
+        print("WARNING: Training on CPU may take longer. Using CPU-optimized fast configuration.")
+        print("Applying CPU hardware configuration: max_length=128, stratified 200 sample subset (160 train / 40 val).")
+        subset_df, _ = train_test_split(df, train_size=200, random_state=42, stratify=df['label'])
 
     print(f"Hardware Environment: {device_str}")
 
@@ -90,20 +103,21 @@ def train_distilbert():
 
     # Convert to HF Dataset object for fast tokenization mapping
     from datasets import Dataset
-    train_hf = Dataset.from_pandas(train_df[['text', 'label']])
-    val_hf = Dataset.from_pandas(val_df[['text', 'label']])
+    train_hf = Dataset.from_pandas(train_df[['resume_text', 'job_description', 'label']])
+    val_hf = Dataset.from_pandas(val_df[['resume_text', 'job_description', 'label']])
 
     def preprocess_function(examples):
         return tokenizer(
-            examples['text'],
+            examples['resume_text'],
+            examples['job_description'],
             truncation=True,
             max_length=max_seq_length,
             padding=False,
         )
 
-    print(f"Tokenizing train and validation splits (max_length={max_seq_length})...")
-    tokenized_train = train_hf.map(preprocess_function, batched=True, remove_columns=['text'])
-    tokenized_val = val_hf.map(preprocess_function, batched=True, remove_columns=['text'])
+    print(f"Tokenizing train and validation splits as paired text inputs (max_length={max_seq_length})...")
+    tokenized_train = train_hf.map(preprocess_function, batched=True, remove_columns=['resume_text', 'job_description'])
+    tokenized_val = val_hf.map(preprocess_function, batched=True, remove_columns=['resume_text', 'job_description'])
 
     print(f"Loading base model '{MODEL_CHECKPOINT}' with num_labels=2...")
     model = AutoModelForSequenceClassification.from_pretrained(
@@ -117,7 +131,7 @@ def train_distilbert():
         output_dir=str(OUTPUT_DIR / "checkpoints"),
         eval_strategy="epoch",
         save_strategy="epoch",
-        learning_rate=2e-5,
+        learning_rate=3e-5,
         per_device_train_batch_size=batch_size,
         per_device_eval_batch_size=batch_size,
         num_train_epochs=num_epochs,
@@ -150,7 +164,7 @@ def train_distilbert():
     print("Evaluating best model on validation set...")
     val_metrics = trainer.evaluate()
 
-    # Detailed evaluation for metrics.json
+    # Detailed evaluation for metrics.json & diagnostic output
     predictions = trainer.predict(tokenized_val)
     logits = predictions.predictions
     labels = predictions.label_ids
@@ -158,6 +172,15 @@ def train_distilbert():
     preds = np.argmax(logits, axis=1)
 
     cm = confusion_matrix(labels, preds).tolist()
+    class_rep = classification_report(labels, preds, target_names=["Cross Domain (0)", "Same Domain (1)"], zero_division=0)
+    pred_counts = {int(k): int(v) for k, v in zip(*np.unique(preds, return_counts=True))}
+    actual_counts = {int(k): int(v) for k, v in zip(*np.unique(labels, return_counts=True))}
+
+    print("\n--- DISTILBERT DIAGNOSTIC EVALUATION REPORT ---")
+    print(f"Actual Class Distribution: {actual_counts}")
+    print(f"Predicted Class Distribution: {pred_counts}")
+    print("Confusion Matrix [[TN, FP], [FN, TP]]:", cm)
+    print("Classification Report:\n", class_rep)
 
     final_metrics = {
         "model_name": "Fine-Tuned DistilBERT (distilbert-base-uncased)",
@@ -167,7 +190,7 @@ def train_distilbert():
         "device": device_str,
         "max_length": max_seq_length,
         "epochs": num_epochs,
-        "learning_rate": 2e-5,
+        "learning_rate": 3e-5,
         "batch_size": batch_size,
         "training_time_seconds": round(train_time, 2),
         "accuracy": round(float(accuracy_score(labels, preds)), 4),
@@ -176,10 +199,9 @@ def train_distilbert():
         "f1_score": round(float(f1_score(labels, preds, zero_division=0)), 4),
         "roc_auc": round(float(roc_auc_score(labels, probs)), 4),
         "confusion_matrix": cm,
+        "predicted_distribution": pred_counts,
+        "actual_distribution": actual_counts
     }
-
-    print("--- DistilBERT Validation Metrics ---")
-    print(json.dumps(final_metrics, indent=2))
 
     # Save final model artifacts
     os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -204,3 +226,4 @@ def train_distilbert():
 
 if __name__ == "__main__":
     train_distilbert()
+

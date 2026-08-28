@@ -49,7 +49,7 @@ const ForgotPasswordPage = () => {
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              className="field-control w-full pl-11"
+              className="field-control w-full !pl-12"
               placeholder="name@company.com"
             />
           </div>

@@ -107,11 +107,14 @@ const FixItEditor = ({ resumeText, issues, onApplyFix }) => {
                    <Info className="w-5 h-5 text-blue-500 mt-0.5" />}
                   
                   <div className="flex-1">
-                    <p className="text-sm font-semibold text-slate-800 leading-snug">{issue.message}</p>
+                    <p className="text-sm font-bold text-slate-900 leading-snug">{issue.title || issue.message}</p>
+                    {issue.evidence && (
+                      <p className="text-xs text-slate-500 mt-1 italic">{issue.evidence}</p>
+                    )}
                     
                     <div className="mt-3 p-2 bg-stone-50 border border-stone-200 rounded-lg">
-                      <p className="text-xs text-slate-500 mb-1 uppercase tracking-wider font-semibold">Suggested Fix:</p>
-                      <p className="text-sm text-slate-700 font-medium">{issue.suggestion}</p>
+                      <p className="text-[10px] text-indigo-700 font-bold mb-1 uppercase tracking-wider">Suggested Recommendation:</p>
+                      <p className="text-xs text-slate-700 font-medium leading-relaxed">{issue.suggestion}</p>
                     </div>
 
                     <div className="mt-4 flex items-center justify-end gap-2">

@@ -114,64 +114,280 @@ def _detect_formatting_issues(resume_text):
     return issues
 
 
+def clean_injected_ats_text(text):
+    """Purges any previously injected ATS advice or instructions from resume text."""
+    if not text:
+        return ""
+    return re.sub(r'\s*\((add specific numbers|reduced load time by 40%|add numbers|add specific numbers[^\)]*)\)', '', text, flags=re.IGNORECASE)
+
+
+def _generate_bullet_metric_suggestion(line_text):
+    """Generate a domain-aware, line-specific recommendation based on bullet text content."""
+    line_clean = clean_injected_ats_text(line_text).strip()
+    line_lower = line_clean.lower()
+    snippet_clean = re.sub(r'^[-•*–►]\s*', '', line_clean)
+    snippet_disp = snippet_clean[:45] + "..." if len(snippet_clean) > 45 else snippet_clean
+
+    # 1. Civic / Platform / Reporting / Geolocation / Voice / Multi-modal
+    if any(k in line_lower for k in ["civic", "platform", "geolocation", "submission", "multi-modal", "reporting"]):
+        return f"For this platform bullet ('{snippet_disp}'), consider adding real scale or usage metrics if available, such as number of active users/citizens, total issue submissions handled, or geolocation input accuracy."
+
+    # 2. Automation / LLM / Classification / Routing / NLP
+    if any(k in line_lower for k in ["llm", "classification", "routing", "automated", "automation", "nlp"]):
+        return f"For this AI/automation bullet ('{snippet_disp}'), consider quantifying impact if you have real data, such as classification accuracy rate, volume of complaints processed, or percentage reduction in manual routing time."
+
+    # 3. Google Maps / Visualization / Dashboards / GIS / Mapping
+    if any(k in line_lower for k in ["maps", "gis", "visualization", "dashboard", "dashboards", "tracking"]):
+        return f"For this visualization task ('{snippet_disp}'), consider adding metrics if available, such as number of map locations/issues rendered, dashboard refresh frequency, or active user count."
+
+    # 4. Cloud / DevOps / CI/CD / Docker / Kubernetes / Deployment / Infrastructure
+    if re.search(r'\b(cloud|aws|gcp|azure|docker|kubernetes|k8s|ci/cd|pipeline|deploy|deployment|infrastructure|terraform|devops|serverless)\b', line_lower):
+        return f"For this DevOps bullet ('{snippet_disp}'), consider adding relevant cloud metrics if available, such as deployment frequency, pipeline execution time, infrastructure cost savings, or uptime SLA."
+
+    # 5. Security / Auth / Vulnerabilities / Audits / OAuth
+    if re.search(r'\b(security|secure|auth|authentication|oauth|jwt|encryption|vulnerability|vulnerabilities|pentest|compliance|audit|patch)\b', line_lower):
+        return f"For this security bullet ('{snippet_disp}'), consider quantifying with metrics if available, such as vulnerabilities remediated, security test coverage percentage, or audit compliance pass rate."
+
+    # 6. Backend / REST APIs / Databases / Microservices
+    if re.search(r'\b(api|apis|rest|fastapi|django|express|backend|microservice|microservices|database|sql|postgresql|query|queries|latency|throughput)\b', line_lower):
+        return f"For this backend bullet ('{snippet_disp}'), consider adding relevant backend metrics if available, such as number of API endpoints built, response latency reduction, throughput (req/sec), or query optimization speed."
+
+    # 7. Frontend / UI / UX / Components / Web / Mobile
+    if re.search(r'\b(ui|ux|frontend|component|components|react|vue|css|tailwind|responsive|page|pages|web|mobile|accessibility)\b', line_lower):
+        return f"For this UI bullet ('{snippet_disp}'), consider adding relevant metrics if available, such as page load speedup, number of reusable components, accessibility score, or user engagement."
+
+    # 8. Data / ML / AI / Data Pipelines
+    if re.search(r'\b(data|machine learning|ml|ai|model|accuracy|dataset|pandas|spark|analytics|prediction|training)\b', line_lower):
+        return f"For this ML/data bullet ('{snippet_disp}'), consider adding model metrics if available, such as model evaluation accuracy, dataset scale (rows/GBs processed), or inference speed."
+
+    # 9. Collaboration / Git / Agile / Mentoring
+    if re.search(r'\b(git|agile|scrum|team|collaborated|collaborate|mentor|mentored|pr|pull request|reviews|review|workflow)\b', line_lower):
+        return f"For this workflow bullet ('{snippet_disp}'), consider adding collaboration metrics if available, such as team size, sprint velocity, number of PRs reviewed, or release frequency."
+
+    # 10. Default Fallback
+    return f"For this bullet ('{snippet_disp}'), consider adding relevant outcome metrics if you have verified data (such as volume processed, percentage efficiency gain, or completion timeframe)."
+
+
 def _detect_issues(resume_text, sections_found, missing_keywords, job_description=None):
-    """Generate structured issue objects for the Fix It page."""
+    """Generate structured, context-aware issue objects for the Fix It page."""
     issues = []
     issue_id = 0
     lines = resume_text.split('\n')
+    text_lower = resume_text.lower()
+    word_count = len(resume_text.split())
 
-    # 1. Weak verb detection
+    # 1. Contact Information Components
+    has_email = "@" in text_lower
+    has_phone = bool(re.search(r'(\+\d{1,3}[\s-]?)?\(?\d{3}\)?[\s-]?\d{3}[\s-]?\d{4}', resume_text))
+    has_linkedin = "linkedin.com" in text_lower
+    has_github = "github.com" in text_lower
+
+    if not has_email:
+        issue_id += 1
+        issues.append({
+            "id": f"issue-{issue_id}",
+            "type": "missing_contact",
+            "title": "Missing Email Address",
+            "severity": "error",
+            "line_text": "",
+            "evidence": "No professional email address detected in the header or contact section.",
+            "suggestion": "Add a professional email address near your name at the top header of your resume so recruiters can contact you.",
+            "section": "Contact",
+            "rule": "contact_info",
+            "message": "Missing email address in contact section.",
+        })
+
+    if not has_phone:
+        issue_id += 1
+        issues.append({
+            "id": f"issue-{issue_id}",
+            "type": "missing_contact",
+            "title": "Missing Phone Number",
+            "severity": "warning",
+            "line_text": "",
+            "evidence": "No primary telephone number detected in your contact information.",
+            "suggestion": "Add your primary phone number with country code near the top of your resume.",
+            "section": "Contact",
+            "rule": "contact_info",
+            "message": "Missing phone number in contact header.",
+        })
+
+    if not has_linkedin:
+        issue_id += 1
+        issues.append({
+            "id": f"issue-{issue_id}",
+            "type": "missing_contact",
+            "title": "Missing LinkedIn Link",
+            "severity": "info",
+            "line_text": "",
+            "evidence": "No LinkedIn profile URL detected in your contact header.",
+            "suggestion": "Add your LinkedIn profile URL (e.g. linkedin.com/in/yourname) to your header section to allow recruiters to verify your professional background.",
+            "section": "Contact",
+            "rule": "contact_info",
+            "message": "Missing LinkedIn profile link.",
+        })
+
+    if not has_github and any(tech in text_lower for tech in ["python", "javascript", "react", "git", "c++", "java", "sql"]):
+        issue_id += 1
+        issues.append({
+            "id": f"issue-{issue_id}",
+            "type": "missing_contact",
+            "title": "Missing GitHub Link",
+            "severity": "info",
+            "line_text": "",
+            "evidence": "Technical software skills detected, but no GitHub link was found.",
+            "suggestion": "Add your GitHub profile link if you have technical projects or coding work that recruiters can review.",
+            "section": "Contact",
+            "rule": "contact_info",
+            "message": "Missing GitHub profile link for technical role.",
+        })
+
+    # 2. Resume Word Count / Length Analysis
+    if word_count < 400:
+        issue_id += 1
+        issues.append({
+            "id": f"issue-{issue_id}",
+            "type": "resume_too_short",
+            "title": "Resume Content Too Brief",
+            "severity": "warning",
+            "line_text": "",
+            "evidence": f"The resume currently contains approximately {word_count} words (optimal range is 400–1000 words).",
+            "suggestion": f"The resume currently contains approximately {word_count} words. Add more relevant detail to your Experience and Projects sections, especially your responsibilities, technologies, and measurable outcomes.",
+            "section": "General",
+            "rule": "resume_length",
+            "message": f"Resume is brief ({word_count} words). Expand on key projects and achievements.",
+        })
+    elif word_count > 1000:
+        issue_id += 1
+        issues.append({
+            "id": f"issue-{issue_id}",
+            "type": "resume_too_long",
+            "title": "Resume Length Exceeds Optimal Limit",
+            "severity": "warning",
+            "line_text": "",
+            "evidence": f"The resume currently contains approximately {word_count} words (optimal range is 400–1000 words).",
+            "suggestion": f"The resume currently contains approximately {word_count} words. Remove repetitive descriptions and prioritize achievements, relevant skills, and experience directly related to the target role.",
+            "section": "General",
+            "rule": "resume_length",
+            "message": f"Resume is lengthy ({word_count} words). Condense to keep within 2 pages.",
+        })
+
+    # 3. Section Completeness with Section-Specific Advice
+    section_advice = {
+        "Projects": "Add a Projects section containing 2–3 relevant projects. For each project, mention the problem solved, technologies used, and your contribution.",
+        "Certifications": "Add a Certifications section and list relevant certifications with the certification name, issuing organization, and year.",
+        "Education": "Add your degree, university/institution, graduation year or expected graduation year, and relevant academic details.",
+        "Experience": "Add an Experience section outlining your past employment, core responsibilities, key projects, and accomplishments.",
+        "Skills": "Add a dedicated Skills section categorizing your technical languages, frameworks, databases, and core tools.",
+        "Contact": "Add a Contact header at the top of your resume containing your name, email, phone, location, and professional links."
+    }
+
+    for section_name in ["Experience", "Education", "Skills", "Projects", "Contact", "Certifications"]:
+        if section_name not in sections_found:
+            issue_id += 1
+            issues.append({
+                "id": f"issue-{issue_id}",
+                "type": "section_missing",
+                "title": f"Missing {section_name} Section",
+                "severity": "error" if section_name in ["Experience", "Education", "Skills", "Contact"] else "warning",
+                "line_text": "",
+                "evidence": f"No '{section_name}' section header was detected by the ATS parser.",
+                "suggestion": section_advice.get(section_name, f"Add a clearly labeled '{section_name}' section to your resume."),
+                "section": section_name,
+                "rule": "section_completeness",
+                "message": f'Missing or unclear "{section_name}" section.',
+            })
+
+    # 4. Grouped Job Description Keywords & Missing Technical Skills
+    if missing_keywords:
+        top_missing = [kw for kw in missing_keywords[:8]]
+        formatted_kws = ", ".join(top_missing)
+        issue_id += 1
+        issues.append({
+            "id": f"issue-{issue_id}",
+            "type": "missing_keyword",
+            "title": "Missing Job Keywords & Skills",
+            "severity": "warning",
+            "line_text": "",
+            "evidence": f"The job description mentions {formatted_kws}, but these terms were not detected in your resume.",
+            "suggestion": f"The job description emphasizes {formatted_kws}, but these technologies were not detected in the resume. Add them to your Skills or relevant project/experience section if you genuinely have experience with them.",
+            "section": "Skills",
+            "rule": "keyword_match",
+            "message": f"Job description keywords not detected: {formatted_kws}.",
+        })
+
+    # 5. Weak Verb Detection & Contextual Replacements
+    vague_phrases = ["worked on website", "responsible for development", "worked with team", "handled tasks", "assisted in coding"]
     for line in lines:
         line_stripped = line.strip()
         if not line_stripped:
             continue
+        
+        # Check weak verbs
         for weak, strong in WEAK_VERBS.items():
             if weak in line_stripped.lower():
                 issue_id += 1
-                # Build suggestion by replacing the weak verb
-                suggestion = re.sub(
-                    re.escape(weak),
-                    strong,
-                    line_stripped,
-                    flags=re.IGNORECASE,
-                    count=1,
-                )
+                suggestion_text = re.sub(re.escape(weak), strong, line_stripped, flags=re.IGNORECASE, count=1)
                 issues.append({
                     "id": f"issue-{issue_id}",
                     "type": "weak_verb",
+                    "title": f"Weak Action Verb: '{weak}'",
                     "severity": "warning",
                     "line_text": line_stripped,
-                    "suggestion": suggestion,
+                    "evidence": f"Bullet uses passive/weak phrasing '{weak}'",
+                    "suggestion": f"Make this bullet outcome-oriented by replacing '{weak}' with '{strong}': \"{suggestion_text}\"",
                     "section": _guess_section(line_stripped, lines),
                     "rule": "weak_verb_detection",
                     "message": f'Weak verb detected: "{weak}". Use a stronger action verb like "{strong}".',
                 })
 
-    # 2. Missing metrics in bullet points
+        # Check vague statements
+        for vague in vague_phrases:
+            if vague in line_stripped.lower():
+                issue_id += 1
+                issues.append({
+                    "id": f"issue-{issue_id}",
+                    "type": "weak_experience",
+                    "title": "Vague Experience Description",
+                    "severity": "warning",
+                    "line_text": line_stripped,
+                    "evidence": f"Statement '{vague}' is too general.",
+                    "suggestion": _generate_bullet_metric_suggestion(line_stripped),
+                    "section": _guess_section(line_stripped, lines),
+                    "rule": "weak_description",
+                    "message": f"Vague description: '{vague}'. Specify exact technologies and outcome.",
+                })
+
+    # 6. Missing Quantifiable Metrics in Bullet Points
     for line in lines:
         line_stripped = line.strip()
         if not line_stripped:
             continue
-        # Only check lines that look like bullet points or experience descriptions
-        if (line_stripped.startswith(('-', '•', '*', '–', '►')) or
-                (len(line_stripped) > 20 and any(v in line_stripped.lower() for v in STRONG_VERBS + list(WEAK_VERBS.keys())))):
-            # Check if the line has any numbers/metrics
+        
+        is_bullet = (line_stripped.startswith(('-', '•', '*', '–', '►')) or 
+                    (len(line_stripped) > 25 and any(v in line_stripped.lower() for v in STRONG_VERBS)))
+        
+        if is_bullet:
             has_metric = bool(re.search(r'\d+\s*(%|x|users|clients|customers|revenue|\$|hours|months|projects|team|members|million|billion|k\b)', line_stripped, re.IGNORECASE))
-            has_any_number = bool(re.search(r'\d+', line_stripped))
-            if not has_metric and not has_any_number and len(line_stripped) > 30:
+            has_number = bool(re.search(r'\d+', line_stripped))
+            
+            if not has_metric and not has_number and len(line_stripped) > 30:
                 issue_id += 1
+                snippet = line_stripped[:35] + "..." if len(line_stripped) > 35 else line_stripped
                 issues.append({
                     "id": f"issue-{issue_id}",
                     "type": "missing_metric",
+                    "title": f"Unquantified Impact: '{snippet}'",
                     "severity": "error",
                     "line_text": line_stripped,
-                    "suggestion": line_stripped + " (add specific numbers, e.g., 'reduced load time by 40%')",
+                    "evidence": f"Bullet point '{snippet}' describes a task without measurable outcomes or numbers.",
+                    "suggestion": _generate_bullet_metric_suggestion(line_stripped),
                     "section": _guess_section(line_stripped, lines),
                     "rule": "missing_metric",
-                    "message": "This bullet point lacks quantifiable metrics. Add numbers to strengthen impact.",
+                    "message": f"Bullet '{snippet}' lacks quantifiable metrics. Add numbers to strengthen impact.",
                 })
 
-    # 3. Filler phrases
+    # 7. Filler Phrases
     for line in lines:
         line_stripped = line.strip()
         if not line_stripped:
@@ -179,55 +395,48 @@ def _detect_issues(resume_text, sections_found, missing_keywords, job_descriptio
         for filler in FILLER_PHRASES:
             if filler in line_stripped.lower():
                 issue_id += 1
-                cleaned = re.sub(
-                    re.escape(filler),
-                    "",
-                    line_stripped,
-                    flags=re.IGNORECASE,
-                    count=1,
-                ).strip()
+                cleaned = re.sub(re.escape(filler), "", line_stripped, flags=re.IGNORECASE, count=1).strip()
                 cleaned = re.sub(r'\s+', ' ', cleaned).strip(' ,;')
                 issues.append({
                     "id": f"issue-{issue_id}",
                     "type": "filler_phrase",
+                    "title": f"Generic Filler Phrase: '{filler}'",
                     "severity": "info",
                     "line_text": line_stripped,
-                    "suggestion": cleaned if cleaned else "(Remove this line entirely)",
+                    "evidence": f"Contains generic buzzword '{filler}'",
+                    "suggestion": f"Replace generic buzzword '{filler}' with specific achievements: \"{cleaned}\"" if cleaned else "(Remove this generic line entirely)",
                     "section": _guess_section(line_stripped, lines),
                     "rule": "filler_detection",
                     "message": f'Generic filler phrase: "{filler}". Replace with specific, measurable achievements.',
                 })
 
-    # 4. Missing keywords (from JD comparison)
-    for kw in missing_keywords:
+    # 8. Formatting Issues Integration
+    fmt_issues = _detect_formatting_issues(resume_text)
+    for fmt in fmt_issues:
         issue_id += 1
         issues.append({
             "id": f"issue-{issue_id}",
-            "type": "missing_keyword",
+            "type": "formatting",
+            "title": fmt["label"],
             "severity": "warning",
             "line_text": "",
-            "suggestion": f"Add '{kw}' to your Skills or Experience section where relevant.",
-            "section": "Skills",
-            "rule": "keyword_match",
-            "message": f'Job description keyword "{kw}" not found in your resume.',
+            "evidence": fmt["detail"],
+            "suggestion": f"{fmt['detail']} Use a simple ATS-friendly single-column plain text format.",
+            "section": "General",
+            "rule": "formatting",
+            "message": fmt["label"],
         })
 
-    # 5. Missing sections
-    for section_name in ["Experience", "Education", "Skills", "Projects", "Contact"]:
-        if section_name not in sections_found:
-            issue_id += 1
-            issues.append({
-                "id": f"issue-{issue_id}",
-                "type": "section_missing",
-                "severity": "error",
-                "line_text": "",
-                "suggestion": f"Add a clearly labeled '{section_name}' section to your resume.",
-                "section": section_name,
-                "rule": "section_completeness",
-                "message": f'Missing or unclear "{section_name}" section.',
-            })
+    # 9. Deduplication & Normalization
+    unique_issues = []
+    seen_keys = set()
+    for issue in issues:
+        key = (issue["type"], issue["message"], issue["line_text"])
+        if key not in seen_keys:
+            seen_keys.add(key)
+            unique_issues.append(issue)
 
-    return issues
+    return unique_issues
 
 
 def _guess_section(line, all_lines):
@@ -322,14 +531,13 @@ def _compute_sub_scores(resume_text, word_count, sections_found, total_sections,
 def check_ats_score(resume_text, job_description=None):
     """
     Analyzes resume text against a job description (if provided)
-    to calculate an ATS matching score and provide suggestions.
-    Returns an enhanced payload with sub-scores, structured issues,
-    section data, and formatting checks for the staged parsing animation
-    and Fix It page.
+    using a transparent, 4-component weighted scoring formula:
+    - ML Domain Similarity (30%)
+    - Tech Skill Match (30%)
+    - Keyword Coverage (20%)
+    - Section Completeness (20%)
     """
 
-    # Generic ATS checks
-    score = 0
     feedback = []
     missing_keywords = []
     matched_keywords = []
@@ -338,16 +546,13 @@ def check_ats_score(resume_text, job_description=None):
     # 1. Length Check
     word_count = len(resume_text.split())
     if 400 <= word_count <= 1000:
-        score += 20
         strengths.append("Optimal resume length (400-1000 words).")
     elif word_count < 400:
-        score += 10
         feedback.append("Resume seems a bit short. Consider adding more details about your projects and achievements.")
     else:
-        score += 10
         feedback.append("Resume is quite long. Try to be more concise and limit it to 2 pages.")
 
-    # 2. Section Checks
+    # 2. Section Checks & Section Completeness Score (20% Weight)
     sections = {
         "Experience": r"(experience|work history|employment)",
         "Education": r"(education|academic)",
@@ -368,12 +573,14 @@ def check_ats_score(resume_text, job_description=None):
             missing_sections_list.append(section)
             feedback.append(f"Missing or unclear '{section}' section.")
 
-    score += (sections_found_count / len(sections)) * 30
+    s_section = (sections_found_count / len(sections)) * 100
     if sections_found_count == len(sections):
         strengths.append("All key resume sections are present.")
 
-    # 3. Keyword Matching (if job description provided)
+    # 3. Keyword Coverage Score (20% Weight) & Skill Match Score (30% Weight)
     jd_keywords = []
+    s_keyword = 50.0
+    s_skill = 50.0
     if job_description:
         jd_keywords = [k for k in COMMON_TECH_KEYWORDS if k in job_description.lower()]
         resume_keywords = [k for k in COMMON_TECH_KEYWORDS if k in resume_text.lower()]
@@ -382,26 +589,32 @@ def check_ats_score(resume_text, job_description=None):
         missing_keywords = [k for k in jd_keywords if k not in resume_keywords]
 
         if jd_keywords:
-            match_percentage = (len(matched_keywords) / len(jd_keywords)) * 50
-            score += match_percentage
+            s_keyword = (len(matched_keywords) / len(jd_keywords)) * 100.0
             strengths.append(f"Matched {len(matched_keywords)} key skills from the job description.")
-        else:
-            score += 25  # Default if JD has no recognizable keywords
+            s_skill = min(100.0, (len(matched_keywords) / max(len(jd_keywords), 1)) * 120.0)
     else:
-        # If no JD, check for general professional keywords
         action_verbs = ["managed", "developed", "implemented", "created", "led", "optimized", "increased", "reduced"]
         found_verbs = [v for v in action_verbs if v in resume_text.lower()]
-        score += min(len(found_verbs) * 5, 20)
+        s_keyword = min(len(found_verbs) * 12.5, 100.0)
+        s_skill = 60.0
         if len(found_verbs) > 3:
             strengths.append("Good use of strong action verbs.")
-        else:
-            feedback.append("Consider using more action verbs like 'Implemented', 'Led', 'Optimized'.")
 
-        # General score boost for having a JD to compare against
-        score += 10
+    # 4. ML Similarity Score (30% Weight)
+    s_ml = 50.0
+    try:
+        from ml.predictor import get_predictor
+        predictor = get_predictor()
+        ml_res = predictor.predict(resume_text, job_description or "")
+        if "match_probability" in ml_res:
+            s_ml = ml_res["match_probability"] * 100.0
+    except Exception as e:
+        s_ml = 50.0
 
-    # Ensure score is within 0-100
-    score = min(max(int(score), 0), 100)
+    # Transparent Weighted Scoring Calculation
+    # ATS Score = 0.30*ML + 0.30*Skill + 0.20*Keyword + 0.20*Section
+    score = int(0.30 * s_ml + 0.30 * s_skill + 0.20 * s_keyword + 0.20 * s_section)
+    score = min(max(score, 0), 100)
 
     # Generate Improvement Suggestions
     improvement_suggestions = []

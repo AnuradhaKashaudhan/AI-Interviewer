@@ -662,7 +662,7 @@ const InterviewPage = () => {
 
             monitoringIntervalRef.current = setInterval(() => {
                 runMonitoringCheck();
-            }, 1600);
+            }, 3500);
         };
 
         startMonitoring();

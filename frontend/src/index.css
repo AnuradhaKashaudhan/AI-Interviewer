@@ -5,58 +5,88 @@
 @tailwind utilities;
 
 @layer utilities {
-    .glow-active { animation: pulse-glow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-    .neon-pulse-card { animation: neon-border-pulse 4s ease-in-out infinite; }
-    
-    .glass-card {
-        background: rgba(21, 29, 30, 0.6);
-        backdrop-filter: blur(12px);
-        border: 1px solid rgba(132, 148, 149, 0.2);
-        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-    .glass-card:hover, .glass-card:active {
-        transform: translateY(-4px) scale(1.02);
-        border-color: rgba(0, 240, 255, 0.4);
-        box-shadow: 0 10px 30px -10px rgba(0, 240, 255, 0.2);
-    }
-    
-    .bg-ambience {
-        animation: drift 15s ease-in-out infinite;
-    }
-    
-    .reveal {
-        opacity: 0;
-        transform: translateY(30px);
-        transition: all 0.8s cubic-bezier(0.22, 1, 0.36, 1);
-    }
-    .reveal.active {
-        opacity: 1;
-        transform: translateY(0);
-    }
-    
-    .text-glow-cyan { text-shadow: 0 0 8px rgba(0, 240, 255, 0.6); }
-    
-    .no-scrollbar::-webkit-scrollbar { display: none; }
-    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  .glow-active {
+    animation: pulse-glow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    will-change: opacity;
+  }
+
+  .neon-pulse-card {
+    animation: neon-border-pulse 4s ease-in-out infinite;
+    will-change: opacity;
+  }
+
+  .glass-card {
+    background: rgba(21, 29, 30, 0.75);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1px solid rgba(132, 148, 149, 0.2);
+    transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color 0.25s ease, box-shadow 0.25s ease;
+    transform: translateZ(0);
+  }
+
+  .glass-card:hover,
+  .glass-card:active {
+    transform: translateY(-3px) scale(1.01) translateZ(0);
+    border-color: rgba(0, 240, 255, 0.4);
+    box-shadow: 0 10px 25px -10px rgba(0, 240, 255, 0.2);
+  }
+
+  .bg-ambience {
+    animation: drift 20s ease-in-out infinite;
+    will-change: transform;
+    transform: translateZ(0);
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px) translateZ(0);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    will-change: opacity, transform;
+  }
+
+  .reveal.active {
+    opacity: 1;
+    transform: translateY(0) translateZ(0);
+  }
+
+  .text-glow-cyan {
+    text-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }
 
 @keyframes pulse-glow {
-    0%, 100% { box-shadow: 0 0 15px rgba(0, 240, 255, 0.3); }
-    50% { box-shadow: 0 0 35px rgba(0, 240, 255, 0.6); }
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 1; }
 }
+
 @keyframes drift {
-    0% { transform: translate(0, 0) scale(1); }
-    50% { transform: translate(2%, 2%) scale(1.05); }
-    100% { transform: translate(0, 0) scale(1); }
+  0% { transform: translate(0, 0) scale(1) translateZ(0); }
+  50% { transform: translate(1.5%, 1.5%) scale(1.03) translateZ(0); }
+  100% { transform: translate(0, 0) scale(1) translateZ(0); }
 }
+
 @keyframes neon-border-pulse {
-    0%, 100% { border-color: rgba(0, 240, 255, 0.5); box-shadow: 0 0 10px rgba(0, 240, 255, 0.1); }
-    50% { border-color: rgba(0, 240, 255, 1); box-shadow: 0 0 25px rgba(0, 240, 255, 0.3); }
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 1; }
 }
 
 @keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 /* ATS Fix It Page Styles */
@@ -89,8 +119,15 @@
 }
 
 @keyframes pop-in {
-  0% { opacity: 0; transform: translate(-50%, 10px) scale(0.95); }
-  100% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 10px) scale(0.95);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
 }
 
 
@@ -289,9 +326,25 @@ h4 {
   border: 1px solid rgba(16, 26, 46, 0.12);
   background: rgba(255, 255, 255, 0.98);
   color: var(--text-main);
-  padding: 0.9rem 1rem;
+  padding-top: 0.9rem;
+  padding-bottom: 0.9rem;
+  padding-right: 1rem;
+  padding-left: 1rem;
   outline: none;
   transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+/* Guarantee icon inputs have sufficient left padding so text never overlaps icons */
+.field-control.pl-11,
+input.pl-11,
+.pl-11 {
+  padding-left: 3rem !important;
+}
+
+.field-control.pl-12,
+input.pl-12,
+.pl-12 {
+  padding-left: 3.25rem !important;
 }
 
 .field-control:focus {
