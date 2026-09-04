@@ -9,7 +9,15 @@ import asyncio
 import os
 from datetime import datetime, timezone
 from collections import Counter
+from pathlib import Path
+from dotenv import load_dotenv
 
+# Ensure root .env is loaded
+env_path = Path(__file__).resolve().parent.parent.parent / ".env"
+if env_path.exists():
+    load_dotenv(env_path)
+else:
+    load_dotenv()
 
 import httpx
 from sqlalchemy.orm import Session
@@ -58,7 +66,7 @@ def _build_headers() -> dict:
     """Return auth headers if GITHUB_TOKEN is available."""
     token = os.environ.get("GITHUB_TOKEN", "").strip()
     headers = {"Accept": "application/vnd.github+json"}
-    if token:
+    if token and not token.startswith("your_") and not token.startswith("github_pat_placeholder"):
         headers["Authorization"] = f"Bearer {token}"
     return headers
 
@@ -68,9 +76,8 @@ async def _fetch_contributions(username: str, headers: dict) -> int:
     Fetch total contributions in the last year via GitHub GraphQL API.
     Returns 0 gracefully if the token is missing or any error occurs.
     """
-    token = os.environ.get("GITHUB_TOKEN", "").strip()
-    if not token:
-        return 0  # GraphQL requires a token
+    if "Authorization" not in headers:
+        return 0  # GraphQL requires a valid token
 
     query = """
     query($login: String!) {
@@ -117,6 +124,10 @@ async def fetch_github_stats(username: str) -> dict:
         ValueError  – if the GitHub username does not exist (HTTP 404).
         RuntimeError – on network / rate-limit errors.
     """
+    username = clean_username(username)
+    if not username:
+        raise ValueError("GitHub username cannot be empty.")
+
     headers = _build_headers()
 
     async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT) as client:
@@ -125,18 +136,26 @@ async def fetch_github_stats(username: str) -> dict:
             f"{GITHUB_API_BASE}/users/{username}", headers=headers
         )
 
+        # Fallback to unauthenticated request if configured token is invalid / bad credentials (401)
+        if user_resp.status_code == 401:
+            headers = {"Accept": "application/vnd.github+json"}
+            user_resp = await client.get(
+                f"{GITHUB_API_BASE}/users/{username}", headers=headers
+            )
+
         if user_resp.status_code == 404:
             raise ValueError(f"GitHub user '{username}' not found.")
 
         if user_resp.status_code == 403:
             raise RuntimeError(
-                "GitHub API rate limit reached. Add a GITHUB_TOKEN to .env to increase the limit."
+                "GitHub API rate limit reached. Add a valid GITHUB_TOKEN to .env to increase the limit."
             )
 
         if user_resp.status_code != 200:
             raise RuntimeError(
-                f"GitHub API returned unexpected status {user_resp.status_code}."
+                f"GitHub API returned status {user_resp.status_code} for user '{username}'."
             )
+
 
         user_data = user_resp.json()
 
