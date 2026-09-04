@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 
 const ProfilePage = () => {
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, entitlements } = useAuth();
   const [form, setForm] = useState({
     collegeName: user?.collegeName || '',
     userType: user?.userType || 'professional',
@@ -100,8 +100,27 @@ const ProfilePage = () => {
               <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Account</div>
               <div className="mt-2 text-sm font-semibold text-slate-900">{user?.fullName}</div>
             </div>
+            <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4 sm:col-span-2">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Active Subscription</div>
+              <div className="mt-2 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                  <Shield className="h-4 w-4 text-[#16324f]" />
+                  <span>{entitlements?.plan_name || 'Free Plan'}</span>
+                </div>
+                {entitlements?.plan_id && entitlements.plan_id !== 'free' ? (
+                  <span className="rounded-full bg-emerald-100 border border-emerald-300 px-3 py-0.5 text-xs font-bold text-emerald-800">
+                    ✦ {entitlements.plan_id.toUpperCase()} UNLOCKED
+                  </span>
+                ) : (
+                  <Link to="/pricing" className="text-xs font-bold text-[#16324f] hover:underline">
+                    Upgrade Plan →
+                  </Link>
+                )}
+              </div>
+            </div>
           </div>
         </div>
+
 
         <div className="surface-card p-6">
           <div className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Profile tips</div>

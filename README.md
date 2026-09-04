@@ -266,6 +266,8 @@ python backend/ml/evaluator.py
 - **AI Career Intelligence Agent**: Combines candidate ATS scores, interview depth scores, resume skills, and coding performance to compute a role readiness score ($0-100\%$) and generate explainable product recommendations.
 - **Agentic Commerce Guardrail**: AI recommends, but **never** initiates financial transactions without explicit candidate authorization.
 - **Audit Trail Traceability**: Detailed security and explainability logs (`AuditLog`) recording AI recommendations, payment orders, HMAC signature verification results, and granted entitlements.
+- **Paid Plan UI Indicators**: Responsive header and navbar badges (`✦ PRO` / `✦ ADVANCED`) automatically render when backend database entitlements confirm an active paid subscription, with status reflected in candidate profile overviews.
+
 
 ---
 

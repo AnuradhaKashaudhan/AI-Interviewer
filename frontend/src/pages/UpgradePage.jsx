@@ -22,7 +22,8 @@ const UpgradePage = () => {
   const [searchParams] = useSearchParams();
   const planId = searchParams.get('plan') || 'pro';
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, fetchEntitlements } = useAuth();
+
 
   const [loading, setLoading] = useState(true);
   const [plan, setPlan] = useState(null);
@@ -124,7 +125,12 @@ const UpgradePage = () => {
               throw new Error(verifyData.detail || 'Payment signature verification failed.');
             }
 
+            if (fetchEntitlements) {
+              fetchEntitlements(token);
+            }
+
             navigate('/payment/success', {
+
               state: {
                 orderId: response.razorpay_order_id,
                 paymentId: response.razorpay_payment_id,

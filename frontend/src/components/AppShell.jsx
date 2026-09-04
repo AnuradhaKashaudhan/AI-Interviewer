@@ -66,7 +66,7 @@ const ShellButton = ({ children, variant = 'primary', ...props }) => (
 const AppShell = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useAuth();
+  const { user, logout, entitlements } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [demoOpen, setDemoOpen] = useState(false);
   const [signInOpen, setSignInOpen] = useState(false);
@@ -88,6 +88,8 @@ const AppShell = () => {
     setSignInOpen(false);
   };
 
+  const isPaidPlan = user && entitlements?.plan_id && entitlements.plan_id !== 'free';
+
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_#fff9ef_0%,_#f7f1e7_44%,_#f0eadf_100%)] text-slate-900">
       <aside className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-40 lg:flex lg:w-80 lg:flex-col lg:border-r lg:border-stone-200 lg:bg-[#fcf8f0]/96 lg:backdrop-blur-md">
@@ -101,7 +103,18 @@ const AppShell = () => {
               <MicVocal className="h-5 w-5" />
             </div>
             <div>
-              <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#8a5d2f]">NeuralInterview</div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#8a5d2f]">NeuralInterview</span>
+                {isPaidPlan && (
+                  <span className={`inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[9px] font-extrabold tracking-wider border shadow-sm ${
+                    entitlements.plan_id === 'advanced'
+                      ? 'border-amber-300 bg-amber-50 text-amber-900'
+                      : 'border-emerald-300 bg-emerald-50 text-emerald-900'
+                  }`}>
+                    ✦ {entitlements.plan_id.toUpperCase()}
+                  </span>
+                )}
+              </div>
               <div className="font-display text-lg font-semibold text-slate-900">AI Interviewer</div>
             </div>
           </button>
@@ -148,11 +161,19 @@ const AppShell = () => {
                 className="h-10 w-10 rounded-full border border-stone-200 bg-stone-100"
               />
               <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-semibold text-slate-900">{user?.fullName || 'Guest User'}</div>
-                <div className="text-xs text-slate-500">{user ? user.email : 'Sign in to save progress'}</div>
+                <div className="flex items-center gap-1.5 truncate text-sm font-semibold text-slate-900">
+                  <span className="truncate">{user?.fullName || 'Guest User'}</span>
+                </div>
+                <div className="truncate text-xs text-slate-500">{user ? user.email : 'Sign in to save progress'}</div>
+                {isPaidPlan && (
+                  <div className="mt-0.5 text-[10px] font-bold text-emerald-700 flex items-center gap-1">
+                    ✦ {entitlements.plan_name}
+                  </div>
+                )}
               </div>
               <ChevronDown className="h-4 w-4 text-slate-400" />
             </button>
+
 
             {user && userMenuOpen && (
               <div className="rounded-2xl border border-stone-200 bg-white p-2 shadow-lg">
@@ -212,15 +233,33 @@ const AppShell = () => {
                 <Menu className="h-5 w-5" />
               </button>
               <div>
-                <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#8a5d2f]">AI Interviewer</div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#8a5d2f]">AI Interviewer</span>
+                  {isPaidPlan && (
+                    <span className={`inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[9px] font-extrabold tracking-wider border shadow-sm ${
+                      entitlements.plan_id === 'advanced'
+                        ? 'border-amber-300 bg-amber-50 text-amber-900'
+                        : 'border-emerald-300 bg-emerald-50 text-emerald-900'
+                    }`}>
+                      ✦ {entitlements.plan_id.toUpperCase()}
+                    </span>
+                  )}
+                </div>
                 <h1 className="font-display text-xl font-semibold text-slate-900 sm:text-2xl">{pageTitle}</h1>
               </div>
             </div>
 
             <div className="flex items-center gap-2 sm:gap-3">
-              <ShellButton variant="secondary" onClick={() => navigate('/signup')}>Get Started</ShellButton>
+              {isPaidPlan ? (
+                <div className="hidden sm:flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3.5 py-1.5 text-xs font-bold text-emerald-800">
+                  <span>✦ {entitlements.plan_name} Active</span>
+                </div>
+              ) : (
+                <ShellButton variant="secondary" onClick={() => navigate('/pricing')}>Upgrade Plan</ShellButton>
+              )}
               <ShellButton onClick={() => setDemoOpen(true)}>Watch Demo</ShellButton>
             </div>
+
           </div>
         </header>
 
