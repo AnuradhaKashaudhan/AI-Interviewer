@@ -1,0 +1,306 @@
+[
+  {
+    "chunk_id": "doc_b299bc33fb9d_chunk_0",
+    "document_id": "doc_b299bc33fb9d",
+    "content": "# Behavioral Interviewing Knowledge Base\n\n## Topic: STAR Method Framework\n- **Domain**: behavioral\n- **Topic**: star_framework\n- **Difficulty**: easy\n\n### Structure\n- **Situation**: Set the context by briefly describing the challenge or scenario faced.\n- **Task**: Explain your specific responsibility or role in addressing the situation.\n- **Action**: Outline the concrete technical and interpersonal steps you executed.\n- **Result**: Quantify outcomes, impact, metrics achieved, and key lessons learned.",
+    "metadata": {
+      "domain": "behavioral",
+      "topic": "star_framework",
+      "subtopic": null,
+      "difficulty": "easy",
+      "source": "behavioral_notes.md",
+      "document_id": "doc_b299bc33fb9d",
+      "chunk_id": "doc_b299bc33fb9d_chunk_0",
+      "chunk_index": 0,
+      "total_chunks": 1
+    }
+  },
+  {
+    "chunk_id": "doc_5e278ac55090_chunk_0",
+    "document_id": "doc_5e278ac55090",
+    "content": "# Database Management Systems (DBMS) Knowledge Base\n\n## Topic: Database Normalization\n- **Domain**: dbms\n- **Topic**: normalization\n- **Difficulty**: medium\n\n### Concepts\nNormalization is the process of organizing data in a relational database to minimize data redundancy and prevent data modification anomalies (insertion, update, and deletion anomalies).",
+    "metadata": {
+      "domain": "dbms",
+      "topic": "normalization",
+      "subtopic": null,
+      "difficulty": "medium",
+      "source": "dbms_notes.md",
+      "document_id": "doc_5e278ac55090",
+      "chunk_id": "doc_5e278ac55090_chunk_0",
+      "chunk_index": 0,
+      "total_chunks": 3
+    }
+  },
+  {
+    "chunk_id": "doc_5e278ac55090_chunk_1",
+    "document_id": "doc_5e278ac55090",
+    "content": "### Normal Forms\n1. **First Normal Form (1NF)**: Requires atomic column values and unique column names without repeating groups.\n2. **Second Normal Form (2NF)**: Meets 1NF and requires that all non-key attributes are fully functionally dependent on the primary key.\n3. **Third Normal Form (3NF)**: Meets 2NF and requires no transitive dependencies (non-key attributes depending on other non-key attributes).\n4. **Boyce-Codd Normal Form (BCNF)**: A stricter variant of 3NF where for every functional dependency $X \\rightarrow Y$, $X$ must be a super key.\n\n### Denormalization\nDenormalization is intentionally introducing redundancy into a database schema to improve read query performance, typically in OLAP (analytical) environments or high-throughput reporting data warehouses.\n\n---",
+    "metadata": {
+      "domain": "dbms",
+      "topic": "normalization",
+      "subtopic": null,
+      "difficulty": "medium",
+      "source": "dbms_notes.md",
+      "document_id": "doc_5e278ac55090",
+      "chunk_id": "doc_5e278ac55090_chunk_1",
+      "chunk_index": 1,
+      "total_chunks": 3
+    }
+  },
+  {
+    "chunk_id": "doc_5e278ac55090_chunk_2",
+    "document_id": "doc_5e278ac55090",
+    "content": "---\n\n## Topic: ACID Properties & Transactions\n- **Domain**: dbms\n- **Topic**: acid_transactions\n- **Difficulty**: hard\n\n### Guarantees\n- **Atomicity**: All operations in a transaction execute completely, or none at all (all-or-nothing).\n- **Consistency**: Transactions transition the database from one valid state to another, upholding all constraints.\n- **Isolation**: Concurrent transaction execution yields identical results to executing transactions sequentially.\n- **Durability**: Committed transaction changes persist permanently, even through system crashes.",
+    "metadata": {
+      "domain": "dbms",
+      "topic": "normalization",
+      "subtopic": null,
+      "difficulty": "medium",
+      "source": "dbms_notes.md",
+      "document_id": "doc_5e278ac55090",
+      "chunk_id": "doc_5e278ac55090_chunk_2",
+      "chunk_index": 2,
+      "total_chunks": 3
+    }
+  },
+  {
+    "chunk_id": "doc_5fb1d9ad6c6f_chunk_0",
+    "document_id": "doc_5fb1d9ad6c6f",
+    "content": "# Data Structures & Algorithms Knowledge Base\n\n## Topic: Time & Space Complexity Analysis\n- **Domain**: dsa\n- **Topic**: algorithmic_complexity\n- **Difficulty**: easy\n\n### Big-O Notation\nBig-O notation quantifies upper bounds on worst-case execution time or memory utilization relative to input size $N$.\n\n### Common Complexities\n- $O(1)$: Constant time (hash map lookup).\n- $O(\\log N)$: Logarithmic time (binary search).\n- $O(N)$: Linear time (array iteration).\n- $O(N \\log N)$: Linearithmic time (Merge Sort, Quick Sort average).\n- $O(N^2)$: Quadratic time (Bubble Sort).",
+    "metadata": {
+      "domain": "dsa",
+      "topic": "algorithmic_complexity",
+      "subtopic": null,
+      "difficulty": "easy",
+      "source": "dsa_notes.md",
+      "document_id": "doc_5fb1d9ad6c6f",
+      "chunk_id": "doc_5fb1d9ad6c6f_chunk_0",
+      "chunk_index": 0,
+      "total_chunks": 1
+    }
+  },
+  {
+    "chunk_id": "doc_0d869077bbd6_chunk_0",
+    "document_id": "doc_0d869077bbd6",
+    "content": "# Java Programming Knowledge Base\n\n## Topic: Java Memory Model & Garbage Collection\n- **Domain**: java\n- **Topic**: jvm_garbage_collection\n- **Difficulty**: hard\n\n### Concepts\nJava applications run inside the JVM (Java Virtual Machine). Memory is divided into Heap (Eden, Survivor, Tenured generations) and Stack (stack frames per thread). Garbage collectors (G1GC, ZGC) automatically reclaim unreachable heap memory.",
+    "metadata": {
+      "domain": "java",
+      "topic": "jvm_garbage_collection",
+      "subtopic": null,
+      "difficulty": "hard",
+      "source": "java_notes.md",
+      "document_id": "doc_0d869077bbd6",
+      "chunk_id": "doc_0d869077bbd6_chunk_0",
+      "chunk_index": 0,
+      "total_chunks": 1
+    }
+  },
+  {
+    "chunk_id": "doc_1b11e032688b_chunk_0",
+    "document_id": "doc_1b11e032688b",
+    "content": "# Machine Learning Knowledge Base\n\n## Topic: Overfitting and Regularization\n- **Domain**: machine_learning\n- **Topic**: overfitting\n- **Difficulty**: medium\n\n### Concepts\nOverfitting occurs when a machine learning model learns the noise, detail, and specific fluctuations in the training dataset rather than the underlying general signal. As a result, the model exhibits exceptionally high performance on training data but fails to generalize to unseen test or validation data.",
+    "metadata": {
+      "domain": "machine_learning",
+      "topic": "overfitting",
+      "subtopic": null,
+      "difficulty": "medium",
+      "source": "ml_notes.md",
+      "document_id": "doc_1b11e032688b",
+      "chunk_id": "doc_1b11e032688b_chunk_0",
+      "chunk_index": 0,
+      "total_chunks": 4
+    }
+  },
+  {
+    "chunk_id": "doc_1b11e032688b_chunk_1",
+    "document_id": "doc_1b11e032688b",
+    "content": "### Prevention Techniques\n1. **L1 Regularization (Lasso)**: Adds an absolute value penalty term $\\lambda \\sum |\\beta_j|$ to the loss function. This forces some feature coefficients to shrink exactly to zero, achieving sparse feature selection.\n2. **L2 Regularization (Ridge)**: Adds a squared magnitude penalty term $\\lambda \\sum \\beta_j^2$ to the loss function. It prevents individual weights from becoming excessively large while retaining all features.\n3. **Cross-Validation**: K-Fold cross-validation splits training data into K subsets to tune hyperparameters without leaking evaluation statistics.\n4. **Early Stopping**: Halts training in iterative algorithms when validation loss begins to diverge from training loss.",
+    "metadata": {
+      "domain": "machine_learning",
+      "topic": "overfitting",
+      "subtopic": null,
+      "difficulty": "medium",
+      "source": "ml_notes.md",
+      "document_id": "doc_1b11e032688b",
+      "chunk_id": "doc_1b11e032688b_chunk_1",
+      "chunk_index": 1,
+      "total_chunks": 4
+    }
+  },
+  {
+    "chunk_id": "doc_1b11e032688b_chunk_2",
+    "document_id": "doc_1b11e032688b",
+    "content": "5. **Dropout**: Randomly deactivates a fraction of neural network units during each forward pass during training.",
+    "metadata": {
+      "domain": "machine_learning",
+      "topic": "overfitting",
+      "subtopic": null,
+      "difficulty": "medium",
+      "source": "ml_notes.md",
+      "document_id": "doc_1b11e032688b",
+      "chunk_id": "doc_1b11e032688b_chunk_2",
+      "chunk_index": 2,
+      "total_chunks": 4
+    }
+  },
+  {
+    "chunk_id": "doc_1b11e032688b_chunk_3",
+    "document_id": "doc_1b11e032688b",
+    "content": "---\n\n## Topic: Classification Metrics & Evaluation\n- **Domain**: machine_learning\n- **Topic**: classification_metrics\n- **Difficulty**: hard\n\n### Precision vs. Recall Tradeoff\n- **Precision**: $\\frac{TP}{TP + FP}$ measures the exactness of positive class predictions. Critical in applications like spam filtering or fraud detection where false positives are costly.\n- **Recall**: $\\frac{TP}{TP + FN}$ measures the completeness of positive class identification. Critical in medical diagnosis where false negatives must be minimized.\n- **ROC-AUC vs PR-AUC**: Receiver Operating Characteristic AUC measures true positive rate against false positive rate. Precision-Recall AUC is superior for severely imbalanced datasets because it does not include true negatives in the denominator.",
+    "metadata": {
+      "domain": "machine_learning",
+      "topic": "overfitting",
+      "subtopic": null,
+      "difficulty": "medium",
+      "source": "ml_notes.md",
+      "document_id": "doc_1b11e032688b",
+      "chunk_id": "doc_1b11e032688b_chunk_3",
+      "chunk_index": 3,
+      "total_chunks": 4
+    }
+  },
+  {
+    "chunk_id": "doc_0aa676ccf075_chunk_0",
+    "document_id": "doc_0aa676ccf075",
+    "content": "# Object-Oriented Programming (OOP) Knowledge Base\n\n## Topic: Core Object-Oriented Pillars\n- **Domain**: oop\n- **Topic**: polymorphism_encapsulation\n- **Difficulty**: easy",
+    "metadata": {
+      "domain": "oop",
+      "topic": "polymorphism_encapsulation",
+      "subtopic": null,
+      "difficulty": "easy",
+      "source": "oop_notes.md",
+      "document_id": "doc_0aa676ccf075",
+      "chunk_id": "doc_0aa676ccf075_chunk_0",
+      "chunk_index": 0,
+      "total_chunks": 2
+    }
+  },
+  {
+    "chunk_id": "doc_0aa676ccf075_chunk_1",
+    "document_id": "doc_0aa676ccf075",
+    "content": "### Pillars\n1. **Encapsulation**: Bundling state data and behavioral methods within a single class while restricting direct access to internal state via access modifiers (private, protected, public).\n2. **Abstraction**: Hiding implementation complexity behind simple abstract interfaces.\n3. **Inheritance**: Enabling child classes to inherit attributes and behaviors from parent classes.\n4. **Polymorphism**: The ability of different classes to respond to the same interface or method call differently.\n - **Compile-time Polymorphism**: Method overloading (same method name, different signatures).\n - **Run-time Polymorphism**: Method overriding (child class providing specific implementation for inherited virtual method).",
+    "metadata": {
+      "domain": "oop",
+      "topic": "polymorphism_encapsulation",
+      "subtopic": null,
+      "difficulty": "easy",
+      "source": "oop_notes.md",
+      "document_id": "doc_0aa676ccf075",
+      "chunk_id": "doc_0aa676ccf075_chunk_1",
+      "chunk_index": 1,
+      "total_chunks": 2
+    }
+  },
+  {
+    "chunk_id": "doc_e9a04aa58918_chunk_0",
+    "document_id": "doc_e9a04aa58918",
+    "content": "# Operating Systems Knowledge Base\n\n## Topic: Process Synchronization & Concurrency\n- **Domain**: operating_systems\n- **Topic**: process_synchronization\n- **Difficulty**: hard\n\n### Concepts\nProcess synchronization coordinates concurrent execution of cooperative processes to prevent race conditions and maintain data consistency when accessing shared system resources.",
+    "metadata": {
+      "domain": "operating_systems",
+      "topic": "process_synchronization",
+      "subtopic": null,
+      "difficulty": "hard",
+      "source": "os_notes.md",
+      "document_id": "doc_e9a04aa58918",
+      "chunk_id": "doc_e9a04aa58918_chunk_0",
+      "chunk_index": 0,
+      "total_chunks": 3
+    }
+  },
+  {
+    "chunk_id": "doc_e9a04aa58918_chunk_1",
+    "document_id": "doc_e9a04aa58918",
+    "content": "### Synchronization Primitives\n1. **Mutex (Mutual Exclusion)**: A locking mechanism where only one thread holding the lock can access the critical section at a time.\n2. **Semaphores**: An integer variable used for signaling. Counting semaphores allow $N$ concurrent threads; binary semaphores act like mutex locks.\n3. **Monitors**: High-level language constructs encapsulating shared variables, procedure calls, and condition variables.\n\n---\n\n## Topic: Virtual Memory Management\n- **Domain**: operating_systems\n- **Topic**: virtual_memory\n- **Difficulty**: medium\n\n### Concepts\nVirtual memory decouples logical memory address space from physical RAM, enabling processes to execute using more virtual address space than physical memory available.",
+    "metadata": {
+      "domain": "operating_systems",
+      "topic": "process_synchronization",
+      "subtopic": null,
+      "difficulty": "hard",
+      "source": "os_notes.md",
+      "document_id": "doc_e9a04aa58918",
+      "chunk_id": "doc_e9a04aa58918_chunk_1",
+      "chunk_index": 1,
+      "total_chunks": 3
+    }
+  },
+  {
+    "chunk_id": "doc_e9a04aa58918_chunk_2",
+    "document_id": "doc_e9a04aa58918",
+    "content": "### Paging & Page Faults\n- **Paging**: Memory management scheme dividing physical memory into fixed-size frames and logical memory into pages.\n- **Page Fault**: Hardware interrupt triggered when a process references a page not present in physical RAM, forcing the OS kernel to page in data from secondary disk storage.",
+    "metadata": {
+      "domain": "operating_systems",
+      "topic": "process_synchronization",
+      "subtopic": null,
+      "difficulty": "hard",
+      "source": "os_notes.md",
+      "document_id": "doc_e9a04aa58918",
+      "chunk_id": "doc_e9a04aa58918_chunk_2",
+      "chunk_index": 2,
+      "total_chunks": 3
+    }
+  },
+  {
+    "chunk_id": "doc_a947c0df6ed9_chunk_0",
+    "document_id": "doc_a947c0df6ed9",
+    "content": "# Python Programming Language Knowledge Base\n\n## Topic: Python Memory Management & GIL\n- **Domain**: python\n- **Topic**: memory_management\n- **Difficulty**: hard\n\n### Concepts\nPython handles memory allocation automatically via a private heap containing all Python objects and data structures. The CPython interpreter uses reference counting combined with a generational cyclic garbage collector to detect and reclaim unreachable object reference cycles.\n\n### Global Interpreter Lock (GIL)\nThe GIL is a mutex lock used by CPython to prevent multiple native OS threads from executing Python bytecode simultaneously, preserving thread safety around non-thread-safe reference counting.\n\n---\n\n## Topic: Generators & Iterators\n- **Domain**: python\n- **Topic**: generators\n- **Difficulty**: medium",
+    "metadata": {
+      "domain": "python",
+      "topic": "memory_management",
+      "subtopic": null,
+      "difficulty": "hard",
+      "source": "python_notes.md",
+      "document_id": "doc_a947c0df6ed9",
+      "chunk_id": "doc_a947c0df6ed9_chunk_0",
+      "chunk_index": 0,
+      "total_chunks": 2
+    }
+  },
+  {
+    "chunk_id": "doc_a947c0df6ed9_chunk_1",
+    "document_id": "doc_a947c0df6ed9",
+    "content": "---\n\n## Topic: Generators & Iterators\n- **Domain**: python\n- **Topic**: generators\n- **Difficulty**: medium\n\n### Yield Keyword & Lazy Evaluation\nGenerators are special functions returning iterator objects using the `yield` keyword. Unlike standard functions that execute and return a complete array in memory, generators yield items lazily one at a time, allowing processing of arbitrarily large files or streams with $O(1)$ memory consumption.",
+    "metadata": {
+      "domain": "python",
+      "topic": "memory_management",
+      "subtopic": null,
+      "difficulty": "hard",
+      "source": "python_notes.md",
+      "document_id": "doc_a947c0df6ed9",
+      "chunk_id": "doc_a947c0df6ed9_chunk_1",
+      "chunk_index": 1,
+      "total_chunks": 2
+    }
+  },
+  {
+    "chunk_id": "doc_0e278b948723_chunk_0",
+    "document_id": "doc_0e278b948723",
+    "content": "# Web Development Knowledge Base\n\n## Topic: React Reconciliation & Virtual DOM\n- **Domain**: web_development\n- **Topic**: react_reconciliation\n- **Difficulty**: medium\n\n### Virtual DOM & Fiber Architecture\nReact maintains an in-memory Virtual DOM tree representing UI layout. When component state changes, React constructs a new Virtual DOM tree and runs its Reconciliation algorithm (Fiber) to compute minimal DOM mutations before committing updates to the real browser DOM.\n\n---\n\n## Topic: REST vs. WebSockets\n- **Domain**: web_development\n- **Topic**: api_architecture\n- **Difficulty**: medium",
+    "metadata": {
+      "domain": "web_development",
+      "topic": "react_reconciliation",
+      "subtopic": null,
+      "difficulty": "medium",
+      "source": "web_notes.md",
+      "document_id": "doc_0e278b948723",
+      "chunk_id": "doc_0e278b948723_chunk_0",
+      "chunk_index": 0,
+      "total_chunks": 2
+    }
+  },
+  {
+    "chunk_id": "doc_0e278b948723_chunk_1",
+    "document_id": "doc_0e278b948723",
+    "content": "## Topic: REST vs. WebSockets\n- **Domain**: web_development\n- **Topic**: api_architecture\n- **Difficulty**: medium\n\n### Protocols\n- **REST**: Stateless request-response architecture built over HTTP/HTTPS, utilizing standard verbs (GET, POST, PUT, DELETE).\n- **WebSockets**: Persistent full-duplex TCP communication channels for low-latency real-time bidirectional streaming.",
+    "metadata": {
+      "domain": "web_development",
+      "topic": "react_reconciliation",
+      "subtopic": null,
+      "difficulty": "medium",
+      "source": "web_notes.md",
+      "document_id": "doc_0e278b948723",
+      "chunk_id": "doc_0e278b948723_chunk_1",
+      "chunk_index": 1,
+      "total_chunks": 2
+    }
+  }
+]

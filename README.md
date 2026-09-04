@@ -25,20 +25,26 @@ An end-to-end, full-stack AI-powered ecosystem designed to empower job seekers t
 - **Browser-Only Webcam Video**: Recorded candidate video stays strictly in browser RAM (`MediaRecorder` + `URL.createObjectURL`), allowing post-session preview and local download without server storage.
 - **Adaptive Difficulty Engine**: Pivots to fundamental conceptual questions if candidate scores drop, or escalates to advanced follow-ups when candidates excel.
 
-### 💻 4. Live Coding Sandbox & Technical Round
+### 📚 4. Grounded RAG Knowledge System (Phase 1)
+- **FAISS Vector Store Persistence**: Semantic search over technical domain documents (`dsa`, `dbms`, `os`, `oop`, `python`, `ml`, `java`, etc.) pre-indexed using `all-MiniLM-L6-v2` dense embeddings.
+- **Metadata Filtering & Graceful Fallback**: Preserves metadata (`domain`, `topic`, `difficulty`, `source`) with metadata filter evaluation and automatic fallback to semantic similarity ranking.
+- **Grounded Gemini Prompts**: Injects top retrieved context chunks into Gemini prompts to ground interview question generation in authentic domain knowledge.
+- **Health Check Endpoint**: Exposes `GET /api/rag/health` reporting index status, document count, and vector chunk counts.
+
+### 💻 5. Live Coding Sandbox & Technical Round
 - **Monaco Code Editor**: Integrated multi-language code editor in the interview interface for live technical problem solving.
 - **Live Code Execution**: Secure execution of candidate code submissions via the Piston API runner with stdout/stderr reporting.
 
-### 🏆 5. Competitive Coding Profile Dashboard
+### 🏆 6. Competitive Coding Profile Dashboard
 - **Unified Analytics**: Multi-platform aggregator for **LeetCode**, **CodeChef**, **GeeksforGeeks**, and **GitHub**.
 - **Smart URL Normalization**: Automatically strips full profile URLs (e.g. `https://www.geeksforgeeks.org/profile/anuradhaka4050`) to extract clean usernames.
 - **Metrics Tracked**: Total problems solved (Easy, Medium, Hard breakdown), global rank, contest ratings, badges, and candidate technical competency index.
 
-### 📊 6. Deep Multi-Dimensional Feedback & Analytics
+### 📊 7. Deep Multi-Dimensional Feedback & Analytics
 - **6 Evaluation Dimensions**: Overall Score, Relevance, Technical Accuracy, Depth, Clarity, and Confidence.
 - **Qualitative Insights**: Pinpoints strengths, actionable weaknesses, missing domain terms, and model reference answers powered by Google Gemini API.
 
-### 🔐 7. Supabase PostgreSQL Database Architecture
+### 🔐 8. Supabase PostgreSQL Database Architecture
 - **Production Database**: Running on **Supabase PostgreSQL** (`app` schema: `app.users`, `app.coding_profiles`, `app.sessions`, `app.questions`, `app.answers`, `app.evaluations`).
 - **SQLite Fallback**: Local SQLite database (`ai_interviewer.db`) preserved for offline development and local rollback safety.
 - **Secure JWT Auth**: Access tokens stored in-memory with HTTP-only refresh token cookies and Bcrypt password hashing.
@@ -51,7 +57,7 @@ An end-to-end, full-stack AI-powered ecosystem designed to empower job seekers t
 | :--- | :--- |
 | **Frontend** | React 18, Vite, TailwindCSS, Framer Motion, Monaco Editor (`@monaco-editor/react`), Lucide Icons |
 | **Backend API** | Python 3.10+, FastAPI, Uvicorn (ASGI), Pydantic, SQLAlchemy ORM, psycopg2 |
-| **Machine Learning** | **Sentence-Transformers (`all-MiniLM-L6-v2`)**, Scikit-Learn, Joblib, PyTorch, SpaCy |
+| **Machine Learning & RAG** | **Sentence-Transformers (`all-MiniLM-L6-v2`)**, **FAISS Vector Store**, **LangChain Core**, Scikit-Learn, Joblib, PyTorch, SpaCy |
 | **Cloud Storage & DB** | **Supabase Storage** (Private `resumes` bucket), **Supabase PostgreSQL** (`app` schema), SQLite (Fallback) |
 | **AI / NLP Models** | Google Gemini API (`gemini-1.5-flash`), OpenAI Whisper ASR, SpaCy NLP, PyTTSX3 |
 | **Utilities & Runners** | PDFPlumber, OpenCV, Piston API Execution Engine, Docker Compose |
@@ -194,8 +200,14 @@ cd AI-Interviewer
    GITHUB_TOKEN=your_github_personal_access_token
    SUPABASE_URL=https://your-supabase-project-ref.supabase.co
    SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
-   DATABASE_URL=postgresql://postgres:password@db.your-supabase-project-ref.supabase.co:5432/postgres?options=-csearch_path%3Dapp,public
+   DATABASE_URL=sqlite:///./ai_interviewer.db
+
+   # Razorpay Test Mode Credentials
+   RAZORPAY_KEY_ID=your_test_key_id
+   RAZORPAY_KEY_SECRET=your_test_key_secret
+   RAZORPAY_WEBHOOK_SECRET=your_test_webhook_secret
    ```
+
 
 4. **Start Backend Server**:
    ```bash
@@ -247,6 +259,16 @@ python backend/ml/evaluator.py
 
 ---
 
+### 💳 9. Razorpay Agentic Commerce & AI Career Intelligence (Buildathon 2026)
+- **Centralized Server-Side Plan Catalog**: Server-side price authority (`Free` ₹0, `Pro` ₹19 / 1900 paise, `Advanced` ₹99 / 9900 paise). Frontend cannot tamper with payment amounts.
+- **Razorpay Orders API & HMAC SHA256 Signature Verification**: Server-side HMAC SHA256 verification over `razorpay_order_id|razorpay_payment_id` using `RAZORPAY_KEY_SECRET`.
+- **Webhook Processing & Idempotency**: Server-to-server webhook endpoint (`POST /api/webhooks/razorpay`) with `X-Razorpay-Signature` validation and `WebhookEvent` deduplication (`external_event_id`).
+- **AI Career Intelligence Agent**: Combines candidate ATS scores, interview depth scores, resume skills, and coding performance to compute a role readiness score ($0-100\%$) and generate explainable product recommendations.
+- **Agentic Commerce Guardrail**: AI recommends, but **never** initiates financial transactions without explicit candidate authorization.
+- **Audit Trail Traceability**: Detailed security and explainability logs (`AuditLog`) recording AI recommendations, payment orders, HMAC signature verification results, and granted entitlements.
+
+---
+
 ## 📡 API Endpoints Reference
 
 | Method | Endpoint | Description |
@@ -255,6 +277,15 @@ python backend/ml/evaluator.py
 | `POST` | `/api/auth/login` | Authenticate user & return JWT tokens |
 | `POST` | `/api/auth/refresh` | Silent refresh for access token |
 | `GET` | `/api/auth/me` | Fetch authenticated user profile |
+| `GET` | `/api/plans` | Fetch server-side plan catalog and prices |
+| `POST` | `/api/payments/create-order` | Create Razorpay order & internal PaymentOrder record |
+| `POST` | `/api/payments/verify` | Server-side HMAC SHA256 signature verification & plan activation |
+| `GET` | `/api/payments/history` | Get candidate billing and order transaction history |
+| `POST` | `/api/webhooks/razorpay` | Razorpay webhook signature verification & event processing |
+| `GET` | `/api/user/entitlements` | Fetch candidate plan capabilities and session limits |
+| `POST` | `/api/career-intelligence/analyze` | AI Career Intelligence Agent readiness audit |
+| `GET` | `/api/career-intelligence/latest` | Fetch latest explainable AI recommendation |
+| `GET` | `/api/audit-logs` | Fetch user audit trail for AI actions and payment security |
 | `POST` | `/api/upload-resume` | Upload PDF resume to Supabase Storage & extract skills |
 | `POST` | `/api/check-ats` | Analyze resume text against job description |
 | `POST` | `/api/ats-recheck` | Live heuristic re-check for live ATS editor |
@@ -265,6 +296,7 @@ python backend/ml/evaluator.py
 | `POST` | `/api/execute-code` | Execute candidate code via Piston runner |
 | `GET` | `/api/interview-report` | Generate dynamic performance evaluation report from PostgreSQL |
 | `GET` | `/api/coding-profile/{platform}/{username}` | Fetch stats for LeetCode, CodeChef, GeeksforGeeks, or GitHub |
+
 
 ---
 

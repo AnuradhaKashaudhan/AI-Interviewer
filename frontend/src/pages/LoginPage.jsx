@@ -38,7 +38,9 @@ const LoginPage = () => {
     setSubmitting(true);
     try {
       const response = await login({ email: form.email.trim(), password: form.password });
-      navigate('/dashboard');
+      const searchParams = new URLSearchParams(location.search);
+      const redirectTarget = searchParams.get('redirect') || '/dashboard';
+      navigate(redirectTarget, { replace: true });
     } catch (error) {
       setServerError(error.message || 'Unable to sign in.');
     } finally {

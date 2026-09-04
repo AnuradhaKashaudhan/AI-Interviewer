@@ -27,7 +27,7 @@ def get_gemini_client():
                 return None
             genai.configure(api_key=GEMINI_API_KEY)
             
-            models_to_try = ["gemini-1.5-flash", "gemini-pro", "gemini-1.5-pro"]
+            models_to_try = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-pro", "gemini-1.5-pro"]
             for model_name in models_to_try:
                 try:
                     print(f"DEBUG: Testing Gemini model: {model_name}")

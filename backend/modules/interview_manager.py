@@ -126,8 +126,9 @@ def _build_initial_question(role: str, skills: list[str], asked_questions: set) 
 
     return "Tell me about a complex technical challenge you solved and how you approached it."
 
-def _build_coding_question() -> str:
-    return "CODING ROUND: Implement a function that returns the first non-repeating character in a string. Return the character or -1 if no such character exists."
+def _build_coding_question(session_id: str, role: str = "", skills: list[str] = None) -> dict:
+    from .coding_question_service import select_coding_question
+    return select_coding_question(session_id, role, skills)
 
 def _build_followup_question(question: str, answer_quality: str, role: str, skills: list[str], asked_questions: set) -> str:
     matched_item = _match_bank_item(question, role, skills)
@@ -181,8 +182,22 @@ def start_interview(db: Session, user_id: str, resume_skills: list[str], persona
 
     client = get_gemini_client()
     if client and actual_role:
-        skills_str = ", ".join(resume_skills) if resume_skills else "general technology"
-        prompt = f"""You are an expert technical interviewer ({persona} persona) hiring for the role of '{actual_role}'.
+        from .question_generator import generate_rag_grounded_question
+        rag_q = generate_rag_grounded_question(
+            role=actual_role,
+            skills=resume_skills,
+            topic=resume_skills[0] if resume_skills else actual_role,
+            difficulty="medium",
+            persona=persona,
+            resume_text=resume_text,
+            asked_questions=asked_questions,
+            gemini_client=client
+        )
+        if rag_q:
+            first_q = rag_q
+        else:
+            skills_str = ", ".join(resume_skills) if resume_skills else "general technology"
+            prompt = f"""You are an expert technical interviewer ({persona} persona) hiring for the role of '{actual_role}'.
 Candidate's key skills: {skills_str}
 Candidate's Profile details: {(resume_text or "")[:2000]}
 
@@ -190,13 +205,13 @@ Generate one deep, role-specific opening question that is NOT a generic introduc
 It should be anchored in a concrete skill, architecture decision, or technical tradeoff relevant to the role.
 Keep the question concise and realistic. Do NOT include any extra greetings, instructions, or meta-commentary. Just return the raw question text.
 """
-        try:
-            response = client.generate_content(prompt)
-            q_text = response.text.strip().strip('"').strip("'")
-            if len(q_text) > 10 and q_text not in asked_questions:
-                first_q = q_text
-        except Exception as e:
-            print(f"Error generating dynamic first question: {e}")
+            try:
+                response = client.generate_content(prompt)
+                q_text = response.text.strip().strip('"').strip("'")
+                if len(q_text) > 10 and q_text not in asked_questions:
+                    first_q = q_text
+            except Exception as e:
+                print(f"Error generating dynamic first question: {e}")
 
     # Save first question to DB
     new_question = Question(
@@ -252,7 +267,8 @@ def next_question(db: Session, session_id: str, user_id: str) -> Optional[str]:
     
     category = "behavioral"
     if coding_round_enabled and next_order == 2:
-        pending_q = _build_coding_question()
+        q_data = _build_coding_question(session_id, session.role, session.skills)
+        pending_q = f"CODING ROUND: [{q_data['id']}] {q_data['title']}\n\n{q_data['question_text']}"
         category = "coding"
 
     new_question = Question(

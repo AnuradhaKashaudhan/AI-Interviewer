@@ -1,13 +1,20 @@
-from faster_whisper import WhisperModel
 import os
 
-# Switch to "tiny" for much faster transcription in mock sessions
-model_size = "tiny"
-try:
-    model = WhisperModel(model_size, device="cpu", compute_type="int8")
-except Exception as e:
-    print(f"Error loading Whisper model: {e}")
-    model = None
+_model = None
+
+def get_whisper_model():
+    global _model
+    if _model is None:
+        try:
+            from faster_whisper import WhisperModel
+            model_size = "tiny"
+            print(f"Loading Whisper model ('{model_size}')...")
+            _model = WhisperModel(model_size, device="cpu", compute_type="int8")
+            print("Whisper model loaded successfully.")
+        except Exception as e:
+            print(f"Error loading Whisper model: {e}")
+            _model = None
+    return _model
 
 def transcribe_audio(audio_path: str) -> str:
     """
@@ -19,6 +26,7 @@ def transcribe_audio(audio_path: str) -> str:
     Returns:
         str: Transcribed text.
     """
+    model = get_whisper_model()
     if not model:
         return "Error: Whisper model not loaded."
         

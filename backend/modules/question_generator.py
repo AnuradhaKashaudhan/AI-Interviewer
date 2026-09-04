@@ -286,3 +286,78 @@ def generate_questions(skills: list) -> dict:
         "hr_questions": hr_questions,
         "technical_questions": technical_questions,
     }
+
+
+def generate_rag_grounded_question(
+    role: str,
+    skills: list = None,
+    topic: str = None,
+    difficulty: str = "medium",
+    persona: str = "friendly",
+    resume_text: str = None,
+    asked_questions: set = None,
+    gemini_client = None
+) -> str:
+    """
+    Generates an interview question grounded in RAG retrieved technical knowledge chunks.
+    Falls back gracefully to non-RAG generation if RAG is disabled, unavailable, or errors out.
+    """
+    asked_questions = asked_questions or set()
+    skills_list = skills or []
+    
+    # 1. Attempt RAG Retrieval
+    context_text = ""
+    try:
+        try:
+            from rag import get_rag_service
+        except ImportError:
+            from backend.rag import get_rag_service
+            
+        rag_service = get_rag_service()
+        retrievals = rag_service.retrieve_for_interview(
+            role=role,
+            topic=topic,
+            skills=skills_list,
+            difficulty=difficulty
+        )
+        if retrievals:
+            context_text = rag_service.build_context_prompt(retrievals)
+    except Exception as e:
+        print(f"[RAG Grounding] Warning: Retrieval failed or unavailable: {e}")
+        context_text = ""
+
+    # 2. If Gemini client is provided and RAG context exists, build RAG-grounded prompt
+    if gemini_client and context_text:
+        skills_str = ", ".join(skills_list) if skills_list else "general technical skills"
+        prompt = f"""SYSTEM INSTRUCTIONS:
+You are an expert technical interviewer ({persona} persona) interviewing a candidate for the role of '{role}'.
+
+INTERVIEW CONTEXT:
+Target Role: {role}
+Target Topic: {topic or 'Core Engineering'}
+Target Difficulty: {difficulty}
+Candidate Skills: {skills_str}
+Resume Details: {(resume_text or '')[:1000]}
+
+RETRIEVED TECHNICAL KNOWLEDGE BASE CONTEXT:
+{context_text}
+
+TASK & GENERATION REQUIREMENTS:
+1. Use the RETRIEVED TECHNICAL KNOWLEDGE BASE CONTEXT above as your primary technical grounding for the question.
+2. Formulate one clear, high-quality, practical interview question matching the requested difficulty ({difficulty}).
+3. Do NOT invent unsupported technical facts outside of the retrieved domain context.
+4. Do NOT copy the document verbatim or expose internal RAG metadata/source tags to the candidate.
+5. Do NOT repeat any previously asked questions: {list(asked_questions)[:5]}
+6. Return ONLY the raw question text without greetings, markdown formatting, quotes, or meta-commentary.
+"""
+        try:
+            response = gemini_client.generate_content(prompt)
+            q_text = response.text.strip().strip('"').strip("'")
+            if len(q_text) > 15 and q_text not in asked_questions:
+                return q_text
+        except Exception as e:
+            print(f"[RAG Grounding] Error generating Gemini question: {e}")
+
+    # Fallback return None if RAG/Gemini generation was not used
+    return None
+

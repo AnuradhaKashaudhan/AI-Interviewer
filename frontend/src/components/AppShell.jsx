@@ -11,6 +11,7 @@ import {
   MicVocal,
   MonitorUp,
   PlayCircle,
+  Receipt,
   Settings2,
   ShieldQuestion,
   Sparkles,
@@ -28,6 +29,7 @@ const navItems = [
   { label: 'ATS Checker', to: '/ats-checker', icon: SquarePen },
   { label: 'Coding Profile', to: '/coding-profile', icon: Code2 },
   { label: 'Pricing', to: '/pricing', icon: CreditCard },
+  { label: 'Billing & History', to: '/billing', icon: Receipt },
   { label: 'Help & Support', to: '/support', icon: ShieldQuestion },
 ];
 
@@ -39,6 +41,10 @@ const titleByPath = {
   '/ats-checker/fix': 'Fix My Resume',
   '/coding-profile': 'Coding Profile',
   '/pricing': 'Pricing',
+  '/upgrade': 'Upgrade Plan',
+  '/payment/success': 'Payment Receipt',
+  '/payment/failed': 'Payment Status',
+  '/billing': 'Billing & Transactions',
   '/support': 'Help & Support',
   '/profile': 'Profile',
   '/settings': 'Settings',

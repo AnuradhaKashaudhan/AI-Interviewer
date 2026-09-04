@@ -9,8 +9,17 @@ from fastapi.staticfiles import StaticFiles
 import uvicorn
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+env_path = Path(__file__).resolve().parent.parent / ".env"
+if env_path.exists():
+    load_dotenv(env_path)
+else:
+    load_dotenv()
+
 from sqlalchemy.orm import Session
 import jwt
+
 
 import uuid
 from supabase import create_client, Client
@@ -69,6 +78,13 @@ from modules.interview_manager import start_interview, next_question, store_answ
 from modules.speech_to_text import transcribe_audio
 from modules.text_to_speech import speak_question
 from modules.ats_checker import check_ats_score
+from modules.career_intelligence import analyze_candidate_career_intelligence, get_latest_candidate_recommendation
+
+# Import services
+from services.plan_service import get_all_plans, resolve_plan
+from services.payment_service import create_order, verify_payment_signature, process_webhook_payload, get_user_payment_history
+from services.entitlement_service import get_user_entitlements
+from services.audit_service import get_user_audit_logs
 
 # Import routers
 from routers.coding_profile import router as coding_profile_router
@@ -108,6 +124,29 @@ class ATSRequest(BaseModel):
 class MLMatchRequest(BaseModel):
     resume_text: str
     job_description: Optional[str] = None
+
+class RunCodeRequest(BaseModel):
+    code: str
+    language: str
+    question_id: Optional[str] = None
+
+class SubmitCodeRequest(BaseModel):
+    code: str
+    language: str
+    question_id: Optional[str] = None
+
+class CreateOrderRequest(BaseModel):
+    plan_id: Optional[str] = None
+    plan: Optional[str] = None
+
+
+class VerifyPaymentRequest(BaseModel):
+    razorpay_order_id: str
+    razorpay_payment_id: str
+    razorpay_signature: str
+
+class CareerAnalysisRequest(BaseModel):
+    target_role: Optional[str] = None
 
 # Allow CORS for main frontend
 origins = [
@@ -153,6 +192,24 @@ app.include_router(coding_profile_router)
 @app.get("/")
 def read_root():
     return {"message": "Welcome to the AI Mock Interviewer API"}
+
+@app.get("/api/rag/health")
+def rag_health():
+    """Returns status and index stats for the RAG knowledge system."""
+    try:
+        from rag import get_rag_service
+        rag_service = get_rag_service()
+        return rag_service.health_check()
+    except Exception as e:
+        return {
+            "enabled": False,
+            "vector_store": "faiss",
+            "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+            "index_loaded": False,
+            "document_count": 0,
+            "chunk_count": 0,
+            "error": str(e)
+        }
 
 # --- Auth Endpoints ---
 
@@ -418,7 +475,10 @@ async def api_execute_code(request: Request):
         req = urllib.request.Request(
             "https://emkc.org/api/v2/piston/execute",
             data=json.dumps(payload).encode("utf-8"),
-            headers={"Content-Type": "application/json"},
+            headers={
+                "Content-Type": "application/json",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            },
             method="POST",
         )
         with urllib.request.urlopen(req, timeout=20) as response:
@@ -466,6 +526,229 @@ def api_ml_resume_job_match(request: MLMatchRequest):
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error in ML resume-job match model: {str(e)}")
+
+@app.get("/api/interview/{session_id}/coding-question")
+def get_session_coding_question_endpoint(session_id: str, db: Session = Depends(get_db)):
+    from modules.coding_question_service import select_coding_question, get_question_by_id
+    from models import InterviewSession, Question
+    import re
+
+    session = db.query(InterviewSession).filter(InterviewSession.id == session_id).first()
+
+    coding_q = None
+    if session:
+        coding_q = db.query(Question).filter(
+            Question.session_id == session_id,
+            Question.category == "coding"
+        ).first()
+
+    question_data = None
+    if coding_q and coding_q.question_text:
+        match = re.search(r"\[([a-zA-Z0-9_]+)\]", coding_q.question_text)
+        if match:
+            q_id = match.group(1)
+            question_data = get_question_by_id(q_id)
+
+    if not question_data:
+        role = session.role if (session and session.role) else "Software Developer"
+        skills = session.skills if (session and session.skills) else []
+        question_data = select_coding_question(session_id, role, skills)
+
+    return {
+        "id": question_data["id"],
+        "title": question_data["title"],
+        "difficulty": question_data["difficulty"],
+        "category": question_data.get("category", "Coding"),
+        "question_text": question_data["question_text"],
+        "starter_code": question_data["starter_code"],
+        "sample_test_cases": question_data["sample_test_cases"]
+    }
+
+@app.post("/api/interview/{session_id}/run-code")
+def run_code_endpoint(session_id: str, request: RunCodeRequest):
+    from modules.coding_question_service import get_question_by_id
+    from modules.code_evaluator import execute_test_cases
+
+    q_id = request.question_id or "first_unique_char"
+    q_data = get_question_by_id(q_id)
+    sample_tests = q_data.get("sample_test_cases", [])
+
+    results = execute_test_cases(request.language, request.code, sample_tests)
+    return {
+        "passed_tests": results["passed_count"],
+        "total_tests": results["total_count"],
+        "pass_rate": results["pass_rate"],
+        "test_details": results["details"]
+    }
+
+@app.post("/api/interview/{session_id}/submit-code")
+def submit_code_endpoint(
+    session_id: str, 
+    request: SubmitCodeRequest, 
+    current_user: User = Depends(get_current_user), 
+    db: Session = Depends(get_db)
+):
+    from modules.coding_question_service import get_question_by_id
+    from modules.code_evaluator import evaluate_coding_submission
+    from models import InterviewSession, Question, Answer, Evaluation
+    import re
+
+    session = db.query(InterviewSession).filter(InterviewSession.id == session_id).first()
+    if not session or session.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Session not found or forbidden.")
+
+    coding_q_record = db.query(Question).filter(
+        Question.session_id == session_id,
+        Question.category == "coding"
+    ).first()
+
+    q_id = request.question_id
+    if not q_id and coding_q_record:
+        match = re.search(r"\[([a-zA-Z0-9_]+)\]", coding_q_record.question_text)
+        if match:
+            q_id = match.group(1)
+
+    if not q_id:
+        q_id = "first_unique_char"
+
+    q_data = get_question_by_id(q_id)
+    hidden_tests = q_data.get("hidden_test_cases", [])
+
+    eval_result = evaluate_coding_submission(
+        question_text=q_data["question_text"],
+        code=request.code,
+        language=request.language,
+        hidden_test_cases=hidden_tests
+    )
+
+    if coding_q_record:
+        new_answer = db.query(Answer).filter(Answer.question_id == coding_q_record.id).first()
+        if not new_answer:
+            new_answer = Answer(
+                question_id=coding_q_record.id,
+                transcript_text=f"Submitted in {request.language}:\n\n{request.code}"
+            )
+            db.add(new_answer)
+            db.flush()
+        else:
+            new_answer.transcript_text = f"Submitted in {request.language}:\n\n{request.code}"
+
+        new_eval = db.query(Evaluation).filter(Evaluation.answer_id == new_answer.id).first()
+        if not new_eval:
+            new_eval = Evaluation(
+                answer_id=new_answer.id,
+                score=eval_result["score"],
+                relevance_score=eval_result["relevance_score"],
+                technical_accuracy_score=eval_result["technical_accuracy_score"],
+                depth_score=eval_result["depth_score"],
+                clarity_score=eval_result["clarity_score"],
+                confidence_score=eval_result["confidence_score"],
+                feedback=eval_result["feedback"],
+                strengths=eval_result["strengths"],
+                weaknesses=eval_result["weaknesses"],
+                suggested_answer=eval_result["suggested_answer"],
+                next_question_suggestion="Great work completing the live coding round!",
+                answer_quality=eval_result["answer_quality"]
+            )
+            db.add(new_eval)
+        else:
+            new_eval.score = eval_result["score"]
+            new_eval.feedback = eval_result["feedback"]
+            new_eval.strengths = eval_result["strengths"]
+            new_eval.weaknesses = eval_result["weaknesses"]
+            new_eval.suggested_answer = eval_result["suggested_answer"]
+        db.commit()
+
+    return {
+        "passed_tests": eval_result["passed_tests"],
+        "total_tests": eval_result["total_tests"],
+        "score": eval_result["score"],
+        "feedback": eval_result["feedback"],
+        "suggested_improvement": eval_result["suggested_answer"],
+        "complexity": {
+            "time": eval_result["time_complexity"],
+            "space": eval_result["space_complexity"]
+        },
+        "test_details": eval_result["test_details"],
+        "evaluation": eval_result
+    }
+
+
+# --- PLAN CATALOG & SUBSCRIPTION ENDPOINTS ---
+@app.get("/api/plans")
+def get_plans_endpoint():
+    return {"plans": get_all_plans()}
+
+@app.get("/api/user/entitlements")
+def get_entitlements_endpoint(current_user: Optional[User] = Depends(get_optional_current_user), db: Session = Depends(get_db)):
+    user_id = current_user.id if current_user else None
+    return get_user_entitlements(db, user_id)
+
+# --- RAZORPAY PAYMENT ENDPOINTS ---
+@app.post("/api/payments/create-order")
+def create_payment_order_endpoint(request: CreateOrderRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    try:
+        target_plan = request.plan_id or request.plan or "pro"
+        order_details = create_order(current_user.id, target_plan, db)
+        return order_details
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create Razorpay order: {str(e)}")
+
+
+@app.post("/api/payments/verify")
+def verify_payment_endpoint(request: VerifyPaymentRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    try:
+        result = verify_payment_signature(
+            user_id=current_user.id,
+            razorpay_order_id=request.razorpay_order_id,
+            razorpay_payment_id=request.razorpay_payment_id,
+            razorpay_signature=request.razorpay_signature,
+            db=db
+        )
+        return result
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Verification process error: {str(e)}")
+
+@app.get("/api/payments/history")
+def get_payment_history_endpoint(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return {"history": get_user_payment_history(current_user.id, db)}
+
+@app.post("/api/webhooks/razorpay")
+async def razorpay_webhook_endpoint(request: Request, db: Session = Depends(get_db)):
+    raw_body = await request.body()
+    sig_header = request.headers.get("X-Razorpay-Signature") or request.headers.get("x-razorpay-signature") or ""
+    try:
+        result = process_webhook_payload(raw_body, sig_header, db)
+        return result
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Webhook processing error: {str(e)}")
+
+# --- CAREER INTELLIGENCE & AUDIT TRAIL ENDPOINTS ---
+@app.post("/api/career-intelligence/analyze")
+def analyze_career_intelligence_endpoint(request: CareerAnalysisRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    try:
+        result = analyze_candidate_career_intelligence(db, current_user.id, request.target_role)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Career Intelligence analysis failed: {str(e)}")
+
+@app.get("/api/career-intelligence/latest")
+def get_latest_recommendation_endpoint(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    rec = get_latest_candidate_recommendation(db, current_user.id)
+    if not rec:
+        rec = analyze_candidate_career_intelligence(db, current_user.id)
+    return rec
+
+@app.get("/api/audit-logs")
+def get_audit_logs_endpoint(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return {"logs": get_user_audit_logs(db, current_user.id)}
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8000)

@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Navigate, Route, Routes } from 'react-router-dom';
 import AppShell from './components/AppShell.jsx';
+import ProtectedRoute from './components/ProtectedRoute.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import SignupPage from './pages/SignupPage.jsx';
 import HomePage from './pages/HomePage.jsx';
@@ -15,6 +16,10 @@ import ProfilePage from './pages/ProfilePage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
 import InterviewSetupPage from './pages/InterviewSetupPage.jsx';
 import InterviewPage from './InterviewPage.jsx';
+import UpgradePage from './pages/UpgradePage.jsx';
+import PaymentSuccessPage from './pages/PaymentSuccessPage.jsx';
+import PaymentFailedPage from './pages/PaymentFailedPage.jsx';
+import BillingPage from './pages/BillingPage.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 
 function App() {
@@ -36,6 +41,12 @@ function App() {
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/interview/new" element={<InterviewSetupPage />} />
+            
+            {/* Razorpay & Billing Protected Routes */}
+            <Route path="/upgrade" element={<ProtectedRoute><UpgradePage /></ProtectedRoute>} />
+            <Route path="/payment/success" element={<ProtectedRoute><PaymentSuccessPage /></ProtectedRoute>} />
+            <Route path="/payment/failed" element={<ProtectedRoute><PaymentFailedPage /></ProtectedRoute>} />
+            <Route path="/billing" element={<ProtectedRoute><BillingPage /></ProtectedRoute>} />
           </Route>
           <Route path="/interview" element={<InterviewPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />

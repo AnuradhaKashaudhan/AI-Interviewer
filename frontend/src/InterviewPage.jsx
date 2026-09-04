@@ -38,6 +38,8 @@ import {
 import { getPreferredVoice } from "./services/voiceService";
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getAuthToken } from './services/authApi.js';
+import CodingRoundCard from './components/interview/CodingRoundCard';
+import DraggableWebcam from './components/interview/DraggableWebcam';
 
 // Use relative URL so Vite dev proxy forwards /api/* to FastAPI on port 8000.
 // In production, set VITE_API_BASE_URL to your deployed backend URL.
@@ -1263,17 +1265,17 @@ const handleResumeUpload = async (event) => {
     }
 
     return (
-        <div className="page-canvas p-4 md:p-8 relative flex flex-col items-center justify-center overflow-hidden">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(138,93,47,0.08)_0%,_transparent_40%),radial-gradient(circle_at_bottom_right,_rgba(16,26,46,0.05)_0%,_transparent_35%)]" />
-            
-            <div className="w-full max-w-6xl mb-6 flex justify-between items-center z-10">
-                <button onClick={() => navigate('/')} className="flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors">
+        <div className="h-screen w-screen max-w-full bg-[#f8f4ec] text-slate-900 overflow-hidden flex flex-col relative select-none">
+            {/* Top Fixed Status Header Row */}
+            <header className="h-16 w-full px-6 bg-white/90 backdrop-blur-md border-b border-stone-200 flex items-center justify-between flex-shrink-0 z-20">
+                <button onClick={() => navigate('/')} className="flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors font-medium text-sm">
                     <ChevronLeft className="w-4 h-4" />
                     <span>Back to Dashboard</span>
                 </button>
-                <div className="flex items-center gap-2">
-                    <div className="status-pill px-4 py-2">
-                        <div className="status-dot animate-pulse" />
+                
+                <div className="flex items-center gap-3">
+                    <div className="status-pill px-4 py-1.5 flex items-center gap-2 bg-stone-100 rounded-full border border-stone-200 text-xs font-bold">
+                        <div className="status-dot animate-pulse w-2 h-2 rounded-full bg-emerald-500" />
                         <span>Live Dynamic Session</span>
                     </div>
                     <div className={`px-3 py-1.5 rounded-full border text-[11px] font-semibold uppercase tracking-wide flex items-center gap-1.5 ${monitoringBadgeTone}`}>
@@ -1283,11 +1285,28 @@ const handleResumeUpload = async (event) => {
                         </span>
                     </div>
                 </div>
-                <div className="w-24" />
-            </div>
 
+                {interviewStarted ? (
+                    <button 
+                        onClick={() => {
+                            if (window.confirm("Are you sure you want to change your role? This will restart the interview session.")) {
+                                setInterviewStarted(false);
+                                setRoleSelected(false);
+                                setTargetRole("");
+                                stopScreenShare();
+                            }
+                        }}
+                        className="secondary-action px-4 py-2 rounded-full text-xs font-bold transition-colors flex items-center gap-1.5"
+                    >
+                        <Edit2 className="w-3.5 h-3.5" />
+                        Change Role
+                    </button>
+                ) : <div className="w-24" />}
+            </header>
+
+            {/* Monitoring Toasts */}
             {interviewStarted && (
-                <div className="fixed top-24 right-6 z-50 flex flex-col gap-2 w-[330px]">
+                <div className="fixed top-20 right-6 z-50 flex flex-col gap-2 w-[320px] pointer-events-none">
                     <AnimatePresence>
                         {monitoringToasts.map((toast) => (
                             <motion.div
@@ -1295,25 +1314,37 @@ const handleResumeUpload = async (event) => {
                                 initial={{ opacity: 0, y: -8 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -8 }}
-                                className={`rounded-2xl border bg-white px-4 py-3 shadow-sm ${toast.severity === 'red' ? 'border-rose-200' : 'border-amber-200'}`}
+                                className={`rounded-2xl border bg-white px-4 py-3 shadow-md pointer-events-auto ${toast.severity === 'red' ? 'border-rose-200' : 'border-amber-200'}`}
                             >
-                                <p className={`text-sm font-medium ${toast.severity === 'red' ? 'text-rose-800' : 'text-amber-900'}`}>{toast.message}</p>
+                                <p className={`text-xs font-semibold ${toast.severity === 'red' ? 'text-rose-800' : 'text-amber-900'}`}>{toast.message}</p>
                             </motion.div>
                         ))}
                     </AnimatePresence>
                 </div>
             )}
 
-            <main className="w-full max-w-6xl flex flex-col lg:grid lg:grid-cols-[1fr,320px] gap-6 relative z-10 flex-grow">
-                <section className="surface-card overflow-hidden relative flex flex-col min-h-[550px]">
+            {/* Draggable PiP Webcam Widget */}
+            {interviewStarted && (
+                <DraggableWebcam
+                    videoRef={videoRef}
+                    isSpeaking={isSpeaking}
+                    monitoringStatus={monitoringStatus}
+                    stream={stream}
+                />
+            )}
+
+            {/* Main Full-Screen Grid Workspace */}
+            <main className="flex-1 w-full p-4 md:p-6 grid grid-cols-1 lg:grid-cols-[1fr,340px] gap-6 overflow-hidden min-h-0 relative z-10">
+                {/* Left Workspace Panel */}
+                <section className="flex-1 h-full min-h-0 flex flex-col overflow-y-auto custom-scrollbar">
                     {!interviewStarted ? (
-                        <div className="flex-grow flex flex-col items-center justify-center p-8 text-center max-w-4xl mx-auto w-full">
+                        <div className="surface-card p-8 md:p-12 text-center max-w-4xl mx-auto w-full my-auto">
                             <motion.div
                                 initial={{ opacity: 0, scale: 0.98 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 className="w-full"
                             >
-                                <h2 className="display-title text-4xl md:text-5xl mb-2">Configure Your Session</h2>
+                                <h2 className="display-title text-3xl md:text-4xl mb-2">Configure Your Session</h2>
                                 <p className="muted-copy mb-8 text-sm">Select your interview role and optional resume profile to start.</p>
                                 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 text-left max-w-2xl mx-auto">
@@ -1365,7 +1396,7 @@ const handleResumeUpload = async (event) => {
                                         value={profileText}
                                         onChange={(e) => setProfileText(e.target.value)}
                                         placeholder="Paste your CV highlights, job description, or summary here..."
-                                        className="field-control resize-none min-h-[120px]"
+                                        className="field-control resize-none min-h-[100px]"
                                     />
                                 </div>
                                 
@@ -1407,18 +1438,17 @@ const handleResumeUpload = async (event) => {
                                         <div>
                                             <div className="section-eyebrow text-[#16324f]">Enable focus & integrity monitoring (uses your camera)</div>
                                             <p className="text-xs text-slate-600 mt-1">
-                                                Runs in your browser only. Detects if you leave frame, another person appears, or a phone is visible. Never uploads video.
+                                                Runs in your browser only. Detects if you leave frame, another person appears, or a phone is visible.
                                             </p>
                                         </div>
                                     </label>
-                                    <p className="text-xs text-slate-500 text-left">Status: {monitoringNotice}</p>
                                     {(() => {
                                         const isDisabled = !targetRole || (targetRole === "Custom Role" && customRoleText.trim() === "");
                                         return (
                                             <button 
                                                 disabled={isDisabled}
                                                 onClick={startInterview} 
-                                                className={`primary-action px-16 py-4 text-lg w-full rounded-full transition-all ${isDisabled ? 'opacity-45 cursor-not-allowed' : ''}`}
+                                                className={`primary-action px-12 py-3.5 text-base w-full rounded-full transition-all ${isDisabled ? 'opacity-45 cursor-not-allowed' : ''}`}
                                             >
                                                 Start Mock Session
                                             </button>
@@ -1428,141 +1458,53 @@ const handleResumeUpload = async (event) => {
                             </motion.div>
                         </div>
                     ) : (
-                        <>
-                            <div className="absolute top-0 left-0 right-0 p-6 flex justify-between items-start z-20 pointer-events-none w-full">
-                                <div className="flex flex-col items-start surface-card-soft px-6 py-2 pointer-events-auto">
-                                    <div className="flex items-center gap-3">
-                                        <Volume2 className="w-4 h-4 text-[#16324f]" />
-                                        <span className="section-eyebrow">AI Interviewer Speaking</span>
-                                    </div>
-                                    <Waveform />
-                                </div>
-                                <button 
-                                    onClick={() => {
-                                        if (window.confirm("Are you sure you want to change your role? This will restart the interview session.")) {
-                                            setInterviewStarted(false);
-                                            setRoleSelected(false);
-                                            setTargetRole("");
-                                            stopScreenShare();
-                                        }
-                                    }}
-                                    className="secondary-action px-4 py-2 rounded-full text-xs pointer-events-auto transition-colors"
-                                >
-                                    <Edit2 className="w-3.5 h-3.5" />
-                                    Change Role
-                                </button>
-                            </div>
-
-                            <div className="relative flex-grow overflow-hidden flex items-center justify-center bg-[linear-gradient(180deg,_rgba(255,255,255,0.7)_0%,_rgba(247,241,231,0.95)_100%)]">
-                                <img 
-                                    src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600&auto=format&fit=crop"
-                                    alt="Interviewer" 
-                                    className="w-full h-full object-cover opacity-10 absolute inset-0"
+                        <div className="w-full flex-1 flex flex-col min-h-0">
+                            {currentQuestionType === 'coding' ? (
+                                <CodingRoundCard
+                                    sessionId={sessionId}
+                                    apiFetch={apiFetch}
+                                    onNextQuestion={fetchNextQuestion}
+                                    recordMonitoringEvent={recordMonitoringEvent}
                                 />
+                            ) : (
+                                <div className="surface-card p-8 flex-1 flex flex-col justify-between">
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-4 text-[#16324f]">
+                                            <MessageSquare className="w-5 h-5 text-[#8a5d2f]" />
+                                            <span className="section-eyebrow text-[#8a5d2f]">Behavioral / Technical Question</span>
+                                        </div>
+                                        
+                                        <AnimatePresence mode="wait">
+                                            <motion.div 
+                                                key={question + loadingStatus}
+                                                initial={{ opacity: 0, y: 10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, y: -10 }}
+                                                className="prose prose-slate max-w-none"
+                                            >
+                                                <p className="display-title text-2xl md:text-3xl leading-relaxed tracking-wide text-slate-900">
+                                                    {loading ? (loadingStatus || "Evaluating response...") : (question || "Thinking...")}
+                                                </p>
+                                            </motion.div>
+                                        </AnimatePresence>
+                                    </div>
 
-                                {/* Camera preview positioned at the top left, out of way of bottom question caption card */}
-                <div className="absolute top-6 left-6 w-40 h-40 rounded-2xl overflow-hidden surface-card z-20 bg-white">
-                     <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover scale-x-[-1]" />
-                </div>
-
-                <div className="absolute top-6 right-6 w-52 rounded-2xl surface-card-soft z-20 p-4">
-                    <div className="section-eyebrow mb-2">Screen Share</div>
-                    <p className="text-xs text-slate-600 leading-relaxed">
-                        {screenShareActive
-                            ? 'Sharing is active for this session.'
-                            : 'Permission is requested when you start the interview.'}
-                    </p>
-                </div>
-
-                {/* Beautiful readable question caption card at the bottom center with dark blur background, larger font and padding */}
-                <div className="absolute bottom-6 left-6 right-6 p-8 rounded-3xl surface-card max-w-4xl mx-auto z-10 text-center">
-                    <div className="flex items-center justify-center gap-2 mb-3 text-[#16324f]">
-                        <MessageSquare className="w-4 h-4" />
-                        <span className="section-eyebrow">{currentQuestionType === 'coding' ? 'Live Coding Round' : 'Question Caption'}</span>
-                    </div>
-                    {currentQuestionType === 'coding' ? (
-                        <div className="text-left space-y-4">
-                            <div className="rounded-2xl border border-stone-200 bg-white/80 p-4">
-                                <div className="flex items-center justify-between gap-3 mb-2">
-                                    <p className="text-sm font-semibold text-slate-800">{question || 'Code the solution to the prompt below.'}</p>
-                                    <div className="flex items-center gap-2">
-                                        <label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Language</label>
-                                        <select
-                                            value={codingLanguage}
-                                            onChange={(event) => {
-                                                const nextLanguage = event.target.value;
-                                                setCodingLanguage(nextLanguage);
-                                                setCodingCode(getCodingStarterTemplate(nextLanguage));
-                                                setCodingOutput('');
-                                            }}
-                                            className="rounded-full border border-stone-300 bg-white px-3 py-1 text-sm"
-                                        >
-                                            <option value="python">Python</option>
-                                            <option value="cpp">C++</option>
-                                            <option value="java">Java</option>
-                                            <option value="c">C</option>
-                                        </select>
+                                    {/* Spoken Voice Controls inside question card */}
+                                    <div className="pt-6 border-t border-stone-200 flex items-center justify-between">
+                                        <VoiceControls />
+                                        <div className="text-xs text-slate-500 italic">
+                                            {isSpeaking ? "AI Interviewer speaking..." : "Click 'Start Answering' in sidebar to reply"}
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="rounded-xl border border-stone-200 overflow-hidden">
-                                    <Editor
-                                        height="260px"
-                                        theme="vs-light"
-                                        language={codingLanguage === 'cpp' ? 'cpp' : codingLanguage === 'java' ? 'java' : codingLanguage === 'c' ? 'c' : 'python'}
-                                        path={`${codingLanguage}-solution.${codingLanguage === 'cpp' ? 'cpp' : codingLanguage === 'java' ? 'java' : codingLanguage === 'c' ? 'c' : 'py'}`}
-                                        value={codingCode}
-                                        onChange={(value) => setCodingCode(value || '')}
-                                        onPaste={(event) => {
-                                            const pastedText = event.clipboardData?.getData('text') || '';
-                                            if (pastedText.length > 50) {
-                                                recordMonitoringEvent(
-                                                    'large_paste',
-                                                    'A large paste was detected in the coding editor. Keep external content use minimal and transparent.',
-                                                    'amber',
-                                                    'coding'
-                                                );
-                                            }
-                                        }}
-                                        options={{ minimap: { enabled: false }, fontSize: 14 }}
-                                    />
-                                </div>
-                                <div className="mt-3 flex flex-wrap gap-2">
-                                    <button onClick={handleRunCode} disabled={codingExecutionLoading} className="rounded-full border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700">
-                                        {codingExecutionLoading ? 'Running...' : 'Run'}
-                                    </button>
-                                    <button onClick={submitCodingAnswer} disabled={codingSubmitLoading} className="rounded-full bg-[#16324f] px-4 py-2 text-sm font-semibold text-white">
-                                        {codingSubmitLoading ? 'Submitting...' : 'Submit'}
-                                    </button>
-                                </div>
-                                {codingOutput && (
-                                    <pre className="mt-3 whitespace-pre-wrap rounded-xl bg-slate-900 p-3 text-left text-xs text-slate-100">{codingOutput}</pre>
-                                )}
-                                <div className="mt-3 text-[11px] uppercase tracking-wide text-slate-500">Monitoring remains active during this round.</div>
-                            </div>
+                            )}
                         </div>
-                    ) : (
-                        <AnimatePresence mode="wait">
-                            <motion.div 
-                                key={question + loadingStatus}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -10 }}
-                                className="max-h-[180px] overflow-y-auto pr-1"
-                            >
-                                <p className="display-title text-lg md:text-2xl leading-relaxed tracking-wide">
-                                    {loading ? (loadingStatus || "Evaluating response...") : (question || "Thinking...")}
-                                </p>
-                            </motion.div>
-                        </AnimatePresence>
-                    )}
-                </div>
-                            </div>
-                        </>
                     )}
                 </section>
 
-                <aside className="flex flex-col gap-4">
-                    <div className="surface-card p-6 flex flex-col gap-6">
+                {/* Right Control Sidebar */}
+                <aside className="w-full lg:w-[340px] h-full flex flex-col gap-4 overflow-y-auto custom-scrollbar flex-shrink-0">
+                    <div className="surface-card p-6 flex flex-col gap-5">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center border border-stone-200">
@@ -1619,12 +1561,9 @@ const handleResumeUpload = async (event) => {
                                 animate={{ opacity: 1, x: 0 }}
                                 className="p-4 surface-card-soft relative"
                             >
-                                <div className="absolute -top-2 -left-2 w-6 h-6 bg-amber-50 rounded-full flex items-center justify-center border border-amber-200 shadow-sm">
-                                    <MessageSquare className="w-3 h-3 text-[#8a5d2f] font-bold" />
-                                </div>
-                                <div className="section-eyebrow mb-1 pl-2">Live Status</div>
-                                <p className="text-xs font-medium text-slate-600 leading-relaxed italic pl-2">
-                                    {loading ? "Interviewer evaluating..." : "Ready to hear your answer. Click Start Answering below."}
+                                <div className="section-eyebrow mb-1">Live Status</div>
+                                <p className="text-xs font-medium text-slate-600 leading-relaxed italic">
+                                    {loading ? "Interviewer evaluating..." : "Ready to hear your answer."}
                                 </p>
                             </motion.div>
                         )}
@@ -1632,51 +1571,51 @@ const handleResumeUpload = async (event) => {
                         <button 
                             disabled={!feedback} 
                             onClick={fetchNextQuestion}
-                            className={`w-full py-4 rounded-full font-bold flex items-center justify-center gap-2 transition-all ${
+                            className={`w-full py-3.5 rounded-full font-bold flex items-center justify-center gap-2 text-sm transition-all ${
                                 feedback 
                                 ? 'secondary-action' 
                                 : 'bg-white text-slate-400 cursor-not-allowed border border-stone-200'
                             }`}
                         >
-                            <BarChart3 className="w-5 h-5" />
+                            <BarChart3 className="w-4 h-4" />
                             Next Question
                         </button>
 
                         <button 
                             disabled={!interviewStarted}
                             onClick={isRecording ? stopRecording : startRecording}
-                            className={`w-full py-4 rounded-full font-bold flex items-center justify-center gap-2 border transition-all ${
+                            className={`w-full py-3.5 rounded-full font-bold flex items-center justify-center gap-2 border text-sm transition-all ${
                                 !interviewStarted ? 'opacity-30 cursor-not-allowed text-slate-400 border-stone-200 bg-white' :
                                 isRecording 
                                 ? 'secondary-action border-amber-200 bg-amber-50 text-amber-900' 
                                 : 'primary-action'
                             }`}
                         >
-                            {isRecording ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                            {isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
                             {isRecording ? "Stop Recording" : "Start Answering"}
                         </button>
 
                         <button 
                             onClick={() => setIsMuted(!isMuted)}
-                            className="w-full py-4 rounded-full font-bold flex items-center justify-center gap-2 secondary-action transition-all"
+                            className="w-full py-3.5 rounded-full font-bold flex items-center justify-center gap-2 secondary-action text-sm transition-all"
                         >
-                            {isMuted ? <MicOff className="w-5 h-5 text-red-400" /> : <Mic className="w-5 h-5" />}
+                            {isMuted ? <MicOff className="w-4 h-4 text-red-400" /> : <Mic className="w-4 h-4" />}
                             {isMuted ? "Unmute Microphone" : "Mute Microphone"}
                         </button>
 
                         <button 
                             onClick={() => setCompleted(true)}
-                            className="w-full py-4 rounded-full font-bold flex items-center justify-center gap-2 danger-action transition-all"
+                            className="w-full py-3.5 rounded-full font-bold flex items-center justify-center gap-2 danger-action text-sm transition-all"
                         >
-                            <PhoneOff className="w-5 h-5" />
+                            <PhoneOff className="w-4 h-4" />
                             End Interview
                         </button>
                     </div>
 
-                    <div className="p-4 flex items-center justify-center gap-4 text-slate-500 border border-stone-200 rounded-2xl bg-white">
+                    <div className="p-3.5 flex items-center justify-center gap-4 text-slate-600 border border-stone-200 rounded-2xl bg-white">
                         <div className="flex items-center gap-2">
-                            <Clock className="w-4 h-4" />
-                            <span className="text-xs">Duration: <span className="text-white font-bold">{formatTime(sessionTime)}</span></span>
+                            <Clock className="w-4 h-4 text-[#16324f]" />
+                            <span className="text-xs font-semibold">Duration: <span className="text-slate-900 font-extrabold">{formatTime(sessionTime)}</span></span>
                         </div>
                     </div>
                 </aside>

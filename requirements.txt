@@ -21,4 +21,8 @@ transformers
 datasets
 scikit-learn
 accelerate
-
+faiss-cpu
+langchain
+langchain-community
+langchain-core
+razorpay
