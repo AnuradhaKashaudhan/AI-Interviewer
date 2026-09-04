@@ -189,6 +189,14 @@ async def fetch_github_stats(username: str) -> dict:
             headers=headers,
         )
 
+        if repos_resp.status_code == 401:
+            headers_no_auth = {"Accept": "application/vnd.github+json"}
+            repos_resp = await client.get(
+                f"{GITHUB_API_BASE}/users/{username}/repos",
+                params={"per_page": 100, "sort": "updated"},
+                headers=headers_no_auth,
+            )
+
         repos = repos_resp.json() if repos_resp.status_code == 200 else []
         if not isinstance(repos, list):
             repos = []
