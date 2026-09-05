@@ -1,4 +1,8 @@
-# 🚀 AI Interviewer & ATS Optimization Platform
+<p align="center">
+  <img src="./logo.svg" alt="CareerPilot AI Logo" width="300" />
+</p>
+
+# 🚀 CareerPilot AI — AI Interviewer & ATS Optimization Platform
 
 An end-to-end, full-stack AI-powered ecosystem designed to empower job seekers through **intelligent resume parsing, Sentence-BERT semantic resume-job matching, interactive ATS score optimization, competitive coding profile tracking, cloud file storage, and real-time AI-simulated interviews** featuring computer vision, automatic speech recognition (ASR), and natural language processing (NLP).
 

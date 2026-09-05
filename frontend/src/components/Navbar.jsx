@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import CareerPilotLogo from './CareerPilotLogo';
 import {
     BrainCircuit,
     Menu,
@@ -74,19 +75,13 @@ const Navbar = () => {
                     <div className="flex items-center justify-between">
                         <Link
                             to="/"
-                            className="flex items-center gap-3 transition-transform hover:scale-105"
+                            className="transition-transform hover:scale-105"
                             onClick={() => {
                                 window.scrollTo({ top: 0, behavior: 'smooth' });
                                 setIsMobileMenuOpen(false);
                             }}
                         >
-                            <div className="w-10 h-10 rounded-[1.2rem] bg-indigo-600/20 border border-indigo-500/20 flex items-center justify-center p-2">
-                                <BrainCircuit className="text-indigo-500 w-full h-full" />
-                            </div>
-                            <div className="flex flex-col">
-                                <span className="text-base font-black tracking-tight text-white leading-none">AI Interviewer</span>
-                                <span className="text-[10px] text-indigo-500 font-bold uppercase tracking-widest mt-0.5">BETA V1.0</span>
-                            </div>
+                            <CareerPilotLogo lightMode={true} textSize="text-lg" />
                         </Link>
 
                         <button
@@ -167,7 +162,7 @@ const Navbar = () => {
                 </button>
 
                 <div className="text-center pt-2">
-                    <span className="text-[9px] text-text-muted font-bold uppercase tracking-[0.3em] opacity-30">© 2026 AI-INT</span>
+                    <span className="text-[9px] text-text-muted font-bold uppercase tracking-[0.3em] opacity-40">© 2026 CareerPilot AI</span>
                 </div>
             </div>
         </div>
@@ -188,12 +183,9 @@ const Navbar = () => {
                 >
                     <Menu className="w-5 h-5" />
                 </button>
-                <div className="ml-4 flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-500/20 flex items-center justify-center p-1.5">
-                        <BrainCircuit className="text-indigo-500 w-full h-full" />
-                    </div>
-                    <span className="font-bold text-white tracking-tight">AI Interviewer</span>
-                </div>
+                <Link to="/" className="ml-4 flex items-center">
+                    <CareerPilotLogo lightMode={true} iconOnlyOnMobile={true} textSize="text-base" />
+                </Link>
             </header>
 
             {/* Mobile Sidebar Overlay */}

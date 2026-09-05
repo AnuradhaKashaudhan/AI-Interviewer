@@ -1,4 +1,4 @@
-# System Architecture: AI Interviewer — AI-Powered Career Intelligence & Agentic Commerce Platform
+# System Architecture: CareerPilot AI — AI-Powered Career Intelligence & Agentic Commerce Platform
 
 ## 1. System Overview
 

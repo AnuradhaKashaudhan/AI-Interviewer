@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import CareerPilotLogo from './components/CareerPilotLogo';
 
 const LandingPage = () => {
     const navigate = useNavigate();
@@ -40,9 +41,8 @@ const LandingPage = () => {
             {/* TopAppBar */}
             <header className="fixed top-0 w-full z-50 bg-surface/70 backdrop-blur-xl border-b border-outline-variant/30">
                 <div className="flex justify-between items-center px-6 py-4 max-w-7xl mx-auto">
-                    <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-primary-container" style={{ fontVariationSettings: "'FILL' 1" }}>neurology</span>
-                        <span className="font-headline font-bold text-xl bg-clip-text text-transparent bg-gradient-to-r from-primary-container to-secondary-fixed">NEURALINTERVIEW</span>
+                    <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
+                        <CareerPilotLogo lightMode={true} textSize="text-xl" />
                     </div>
                     <button onClick={() => navigate('/interview')} className="bg-primary-container text-on-primary px-4 py-2 rounded-lg font-label text-label-sm font-semibold transition-transform duration-200 active:scale-95 glow-active">
                         Get Started
@@ -234,8 +234,8 @@ const LandingPage = () => {
             <footer className="w-full py-12 border-t border-outline-variant/20 bg-surface-container-lowest">
                 <div className="flex flex-col md:flex-row justify-between items-center px-8 gap-6 max-w-7xl mx-auto">
                     <div className="flex flex-col items-center md:items-start gap-2">
-                        <span className="font-headline font-black text-on-surface text-xl">NEURALINTERVIEW AI</span>
-                        <p className="font-body text-label-sm tracking-tighter text-outline">© 2024 NEURALINTERVIEW AI. SYSTEM ACTIVE.</p>
+                        <CareerPilotLogo lightMode={true} textSize="text-xl" />
+                        <p className="font-body text-label-sm tracking-tighter text-outline">© 2026 CareerPilot AI. SYSTEM ACTIVE.</p>
                     </div>
                     <div className="flex gap-6">
                         <a className="text-outline hover:text-primary-container transition-colors duration-300 font-body text-label-sm tracking-tighter" href="#">Architecture</a>

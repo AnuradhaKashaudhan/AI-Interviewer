@@ -12,7 +12,7 @@ const faqs = [
   },
   {
     question: 'Where do I get support?',
-    answer: 'Use the contact form below or email support@neuralinterview.ai.',
+    answer: 'Use the contact form below or email support@careerpilot.ai.',
   },
 ];
 
@@ -35,7 +35,7 @@ const SupportPage = () => {
           <h2 className="mt-2 font-display text-4xl font-semibold text-slate-900">FAQ, contact, and a direct path to support.</h2>
           <p className="mt-3 text-sm leading-7 text-slate-600">This page is meant to feel like a working product support surface, not a dead brochure link.</p>
           <div className="mt-6 flex flex-wrap gap-3">
-            <a href="mailto:support@neuralinterview.ai" className="inline-flex items-center gap-2 rounded-full bg-[#16324f] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#0f2438]">
+            <a href="mailto:support@careerpilot.ai" className="inline-flex items-center gap-2 rounded-full bg-[#16324f] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#0f2438]">
               <Mail className="h-4 w-4" />
               Email support
             </a>

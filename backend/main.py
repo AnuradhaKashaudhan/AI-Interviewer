@@ -91,7 +91,7 @@ from routers.coding_profile import router as coding_profile_router
 from ml.predictor import get_predictor
 
 BASE_DIR = Path(__file__).resolve().parent
-app = FastAPI(title="AI Mock Interviewer API", description="API for the AI Personalized Mock Interview Coach")
+app = FastAPI(title="CareerPilot AI API", description="API for CareerPilot AI — AI Mock Interviewer & ATS Optimization Coach")
 
 class SignupRequest(BaseModel):
     fullName: str
@@ -191,7 +191,7 @@ app.include_router(coding_profile_router)
 
 @app.get("/")
 def read_root():
-    return {"message": "Welcome to the AI Mock Interviewer API"}
+    return {"message": "Welcome to the CareerPilot AI API"}
 
 @app.get("/api/rag/health")
 def rag_health():

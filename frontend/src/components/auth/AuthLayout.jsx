@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowRight, BadgeCheck, Clock3, Mail, Phone, ShieldCheck, Sparkles, UserRound } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import CareerPilotLogo from '../CareerPilotLogo';
 
 const highlights = [
   { icon: UserRound, title: 'Full name, email, and phone', copy: 'Store the right account details from day one.' },
@@ -14,14 +15,8 @@ const AuthLayout = ({ eyebrow, title, description, children, actionLink }) => {
       <div className="grid min-h-screen lg:grid-cols-[0.92fr,1.08fr]">
         <aside className="hidden flex-col justify-between border-r border-stone-200 bg-[#fcf8f0]/95 px-10 py-10 lg:flex">
           <div>
-            <Link to="/" className="inline-flex items-center gap-3 rounded-2xl px-2 py-2 transition hover:bg-stone-100">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#16324f] text-white shadow-sm">
-                <Sparkles className="h-5 w-5" />
-              </div>
-              <div>
-                <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#8a5d2f]">NeuralInterview</div>
-                <div className="font-display text-xl font-semibold text-slate-900">AI Interviewer</div>
-              </div>
+            <Link to="/" className="inline-flex items-center rounded-2xl px-2 py-2 transition hover:bg-stone-100">
+              <CareerPilotLogo textSize="text-xl" />
             </Link>
 
             <div className="mt-12 max-w-lg">
@@ -73,7 +68,7 @@ const AuthLayout = ({ eyebrow, title, description, children, actionLink }) => {
 
             <div className="surface-card p-6 sm:p-8">
               <div className="lg:hidden">
-                <div className="section-eyebrow">NeuralInterview</div>
+                <div className="section-eyebrow">CareerPilot AI</div>
                 <h1 className="mt-2 font-display text-3xl font-semibold text-slate-900">{title}</h1>
                 <p className="mt-3 text-sm leading-6 text-slate-600">{description}</p>
               </div>

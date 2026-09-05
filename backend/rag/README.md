@@ -1,7 +1,7 @@
 # 📚 RAG Knowledge System Architecture & Operations Guide
 
 ## 1. Overview & Purpose
-The **Retrieval-Augmented Generation (RAG)** knowledge system grounds the AI Mock Interviewer's question generation pipeline in verified technical domain documentation. 
+The **Retrieval-Augmented Generation (RAG)** knowledge system grounds CareerPilot AI's question generation pipeline in verified technical domain documentation. 
 
 Instead of relying solely on baseline parametric LLM knowledge or generic static question banks, RAG retrieves relevant technical chunks (e.g. system design tradeoffs, algorithms, memory management, database normal forms) from local domain knowledge repositories and injects them directly into Google Gemini prompts.
 

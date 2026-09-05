@@ -101,7 +101,7 @@ const UpgradePage = () => {
         key: orderData.key_id,
         amount: orderData.amount,
         currency: orderData.currency,
-        name: 'AI Interviewer Platform',
+        name: 'CareerPilot AI Platform',
         description: `${orderData.plan.name} Subscription`,
         order_id: orderData.order_id,
         handler: async function (response) {

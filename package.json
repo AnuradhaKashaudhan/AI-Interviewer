@@ -1,7 +1,7 @@
 {
-  "name": "ai-mock-interviewer",
+  "name": "careerpilot-ai",
   "version": "1.0.0",
-  "description": "AI Mock Interviewer and ATS Checker",
+  "description": "CareerPilot AI - AI Mock Interviewer and ATS Optimization Platform",
   "scripts": {
     "dev": "npm --prefix frontend run dev",
     "backend": "python backend/main.py",

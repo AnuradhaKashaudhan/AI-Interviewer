@@ -9,7 +9,7 @@ const HomePage = () => {
         <div className="space-y-6">
           <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-amber-800">
             <Sparkles className="h-4 w-4" />
-            NeuralInterview workspace
+            CareerPilot AI workspace
           </div>
           <div className="max-w-2xl space-y-4">
             <h2 className="font-display text-5xl leading-tight text-slate-900 md:text-6xl">A calmer way to practice interviews and tune your resume.</h2>

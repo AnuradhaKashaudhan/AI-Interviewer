@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import CareerPilotLogo from './CareerPilotLogo';
 import {
   ArrowRight,
   ChevronDown,
@@ -73,7 +74,7 @@ const AppShell = () => {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [authForm, setAuthForm] = useState({ name: '', email: '', password: '' });
 
-  const pageTitle = useMemo(() => titleByPath[location.pathname] || 'AI Interviewer', [location.pathname]);
+  const pageTitle = useMemo(() => titleByPath[location.pathname] || 'CareerPilot AI', [location.pathname]);
 
   const closePanels = () => {
     setMobileOpen(false);
@@ -97,26 +98,9 @@ const AppShell = () => {
           <button
             type="button"
             onClick={() => navigate('/')}
-            className="flex items-center gap-3 rounded-2xl px-2 py-2 text-left transition hover:bg-stone-100 focus:outline-none focus:ring-2 focus:ring-[#16324f]/20"
+            className="flex items-center rounded-2xl px-2 py-2 text-left transition hover:bg-stone-100 focus:outline-none focus:ring-2 focus:ring-[#16324f]/20"
           >
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#16324f] text-white shadow-sm">
-              <MicVocal className="h-5 w-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#8a5d2f]">NeuralInterview</span>
-                {isPaidPlan && (
-                  <span className={`inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[9px] font-extrabold tracking-wider border shadow-sm ${
-                    entitlements.plan_id === 'advanced'
-                      ? 'border-amber-300 bg-amber-50 text-amber-900'
-                      : 'border-emerald-300 bg-emerald-50 text-emerald-900'
-                  }`}>
-                    ✦ {entitlements.plan_id.toUpperCase()}
-                  </span>
-                )}
-              </div>
-              <div className="font-display text-lg font-semibold text-slate-900">AI Interviewer</div>
-            </div>
+            <CareerPilotLogo textSize="text-lg" />
           </button>
 
           <div className="mt-8">
@@ -232,21 +216,7 @@ const AppShell = () => {
               >
                 <Menu className="h-5 w-5" />
               </button>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#8a5d2f]">AI Interviewer</span>
-                  {isPaidPlan && (
-                    <span className={`inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[9px] font-extrabold tracking-wider border shadow-sm ${
-                      entitlements.plan_id === 'advanced'
-                        ? 'border-amber-300 bg-amber-50 text-amber-900'
-                        : 'border-emerald-300 bg-emerald-50 text-emerald-900'
-                    }`}>
-                      ✦ {entitlements.plan_id.toUpperCase()}
-                    </span>
-                  )}
-                </div>
-                <h1 className="font-display text-xl font-semibold text-slate-900 sm:text-2xl">{pageTitle}</h1>
-              </div>
+              <h1 className="font-display text-xl font-semibold text-slate-900 sm:text-2xl">{pageTitle}</h1>
             </div>
 
             <div className="flex items-center gap-2 sm:gap-3">
@@ -294,15 +264,9 @@ const AppShell = () => {
                 <button
                   type="button"
                   onClick={() => navigate('/')}
-                  className="flex items-center gap-3 rounded-2xl px-2 py-2 text-left"
+                  className="flex items-center justify-between rounded-2xl px-2 py-2 text-left"
                 >
-                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#16324f] text-white">
-                    <MicVocal className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#8a5d2f]">NeuralInterview</div>
-                    <div className="font-display text-lg font-semibold text-slate-900">AI Interviewer</div>
-                  </div>
+                  <CareerPilotLogo textSize="text-lg" />
                 </button>
                 <button
                   type="button"

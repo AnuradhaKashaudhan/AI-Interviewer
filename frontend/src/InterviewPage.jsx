@@ -1493,7 +1493,7 @@ const handleResumeUpload = async (event) => {
                                     <div className="pt-6 border-t border-stone-200 flex items-center justify-between">
                                         <VoiceControls />
                                         <div className="text-xs text-slate-500 italic">
-                                            {isSpeaking ? "AI Interviewer speaking..." : "Click 'Start Answering' in sidebar to reply"}
+                                            {isSpeaking ? "CareerPilot AI speaking..." : "Click 'Start Answering' in sidebar to reply"}
                                         </div>
                                     </div>
                                 </div>

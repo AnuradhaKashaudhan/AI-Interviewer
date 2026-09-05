@@ -1,7 +1,7 @@
-# 🚀 AI Interviewer & ATS Optimization Platform - Project Documentation
+# 🚀 CareerPilot AI — AI Interviewer & ATS Optimization Platform - Project Documentation
 
 ## 🌟 1. Project Overview
-The **AI Interviewer & ATS Optimization Platform** is an end-to-end AI-powered ecosystem designed to help candidates prepare for job interviews. The platform combines advanced Artificial Intelligence (AI), Machine Learning (ML), Natural Language Processing (NLP), and Computer Vision to analyze resumes, improve ATS (Applicant Tracking System) scores, and simulate highly realistic interview experiences.
+The **CareerPilot AI** platform is an end-to-end AI-powered ecosystem designed to help candidates prepare for job interviews. The platform combines advanced Artificial Intelligence (AI), Machine Learning (ML), Natural Language Processing (NLP), and Computer Vision to analyze resumes, improve ATS (Applicant Tracking System) scores, and simulate highly realistic interview experiences.
 
 ### Key Features:
 - **Secure Authentication**: Safe registration and login with JWT access/refresh tokens and encrypted password storage.
