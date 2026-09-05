@@ -1,18 +1,18 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  FileSearch, 
-  Upload, 
-  CheckCircle2, 
-  AlertCircle, 
-  ArrowRight, 
-  Loader2, 
-  Sparkles,
-  TrendingUp,
-  FileText,
-  Target,
-  Zap,
-  PenTool
+import {
+    FileSearch,
+    Upload,
+    CheckCircle2,
+    AlertCircle,
+    ArrowRight,
+    Loader2,
+    Sparkles,
+    TrendingUp,
+    FileText,
+    Target,
+    Zap,
+    PenTool
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ATSParsingSequence from './components/ats/ATSParsingSequence.jsx';
@@ -41,7 +41,7 @@ const ATSCheckerSection = () => {
 
         setResumeFile(file);
         setError(null);
-        
+
         setIsAnalyzing(true);
         const formData = new FormData();
         formData.append('file', file);
@@ -51,9 +51,9 @@ const ATSCheckerSection = () => {
                 method: 'POST',
                 body: formData,
             });
-            
+
             if (!response.ok) throw new Error("Failed to parse PDF");
-            
+
             const data = await response.json();
             if (!data.extracted_text) {
                 setError("Could not extract any text from the PDF. Is it a scanned image?");
@@ -62,7 +62,7 @@ const ATSCheckerSection = () => {
                 setResumeText(data.extracted_text);
                 setError(null);
             }
-            
+
         } catch (err) {
             setError("Error connecting to the backend. Please ensure the server is running.");
             console.error(err);
@@ -81,7 +81,7 @@ const ATSCheckerSection = () => {
         setIsAnalyzing(true);
         setResults(null);
         setMlResult(null);
-        
+
         try {
             const [atsResponse, mlResponse] = await Promise.all([
                 fetch(buildApiUrl('/api/check-ats'), {
@@ -104,9 +104,9 @@ const ATSCheckerSection = () => {
                     return null;
                 })
             ]);
-            
+
             if (!atsResponse.ok) throw new Error("ATS Check failed");
-            
+
             const atsData = await atsResponse.json();
             setResults(atsData);
 
@@ -139,23 +139,23 @@ const ATSCheckerSection = () => {
                 <div className="lg:col-span-5 space-y-6">
                     <div className="card p-8 border-white/5 h-full flex flex-col">
                         <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-                             <Upload className="w-5 h-5 text-indigo-400" />
-                             Analyze Your Resume
+                            <Upload className="w-5 h-5 text-indigo-400" />
+                            Analyze Your Resume
                         </h3>
-                        
+
                         {/* File Upload Area */}
-                        <div 
+                        <div
                             onClick={() => fileInputRef.current?.click()}
                             className={`flex-grow border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center gap-4 transition-all cursor-pointer group ${resumeFile ? 'border-green-500/30 bg-green-500/5' : 'border-white/10 bg-white/5 hover:border-primary/30 hover:bg-primary/5'}`}
                         >
-                            <input 
-                                type="file" 
-                                ref={fileInputRef} 
-                                onChange={handleFileUpload} 
-                                accept=".pdf" 
-                                className="hidden" 
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                onChange={handleFileUpload}
+                                accept=".pdf"
+                                className="hidden"
                             />
-                            
+
                             {isAnalyzing && !results ? (
                                 <Loader2 className="w-12 h-12 text-primary animate-spin" />
                             ) : resumeFile ? (
@@ -179,18 +179,17 @@ const ATSCheckerSection = () => {
 
                         {/* Job Description Area */}
                         <div className="mt-8">
-                            <label className="block text-xs font-bold mb-2 text-[#16324f] uppercase tracking-wider flex items-center gap-2">
-                                <Target className="w-4 h-4 text-[#8a5d2f]" />
+                            <label className="block text-sm font-bold mb-2 text-text-muted flex items-center gap-2">
+                                <Target className="w-4 h-4" />
                                 Target Job Description (Optional)
                             </label>
-                            <textarea 
-                                className="w-full bg-white border border-stone-300 rounded-2xl p-4 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#16324f] focus:ring-2 focus:ring-[#16324f]/10 transition-all min-h-[150px] shadow-sm font-sans"
+                            <textarea
+                                className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-primary/50 transition-all min-h-[150px]"
                                 placeholder="Paste the job description here for a tailored match analysis..."
                                 value={jobDescription}
                                 onChange={(e) => setJobDescription(e.target.value)}
                             />
                         </div>
-
 
                         {error && (
                             <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center gap-3 text-red-500 text-sm">
@@ -199,7 +198,7 @@ const ATSCheckerSection = () => {
                             </div>
                         )}
 
-                        <button 
+                        <button
                             onClick={runATSCheck}
                             disabled={!resumeText || isAnalyzing}
                             className={`btn-primary w-full py-4 mt-8 flex items-center justify-center gap-2 shadow-lg shadow-primary/20 ${(!resumeText || isAnalyzing) ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -215,7 +214,7 @@ const ATSCheckerSection = () => {
                     <div className="card p-8 border-white/5 h-full relative overflow-hidden">
                         <AnimatePresence mode="wait">
                             {phase === "idle" ? (
-                                <motion.div 
+                                <motion.div
                                     key="placeholder"
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
@@ -229,7 +228,7 @@ const ATSCheckerSection = () => {
                                     <p className="text-text-muted max-w-xs">Upload your resume and click "Check ATS Score" to see your compatibility results.</p>
                                 </motion.div>
                             ) : phase === "parsing" ? (
-                                <motion.div 
+                                <motion.div
                                     key="parsing"
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
@@ -238,13 +237,13 @@ const ATSCheckerSection = () => {
                                 >
                                     {/* Shimmer pulse effect */}
                                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
-                                    <ATSParsingSequence 
-                                        results={results} 
-                                        onComplete={() => setPhase("results")} 
+                                    <ATSParsingSequence
+                                        results={results}
+                                        onComplete={() => setPhase("results")}
                                     />
                                 </motion.div>
                             ) : (
-                                <motion.div 
+                                <motion.div
                                     key="results"
                                     initial={{ opacity: 0, x: 20 }}
                                     animate={{ opacity: 1, x: 0 }}
@@ -263,12 +262,12 @@ const ATSCheckerSection = () => {
                                                 </div>
                                             </div>
                                             <div className="w-16 h-16 rounded-2xl bg-stone-50 border border-stone-200 flex items-center justify-center relative overflow-hidden">
-                                                 <motion.div 
-                                                    initial={{ height: 0 }} 
-                                                    animate={{ height: `${results.score}%` }} 
+                                                <motion.div
+                                                    initial={{ height: 0 }}
+                                                    animate={{ height: `${results.score}%` }}
                                                     className={`absolute bottom-0 left-0 right-0 ${results.score >= 80 ? 'bg-emerald-100' : results.score >= 60 ? 'bg-amber-100' : 'bg-rose-100'}`}
-                                                 />
-                                                 <TrendingUp className={`w-8 h-8 relative z-10 ${results.score >= 80 ? 'text-emerald-700' : results.score >= 60 ? 'text-amber-800' : 'text-rose-700'}`} />
+                                                />
+                                                <TrendingUp className={`w-8 h-8 relative z-10 ${results.score >= 80 ? 'text-emerald-700' : results.score >= 60 ? 'text-amber-800' : 'text-rose-700'}`} />
                                             </div>
                                         </div>
                                     </div>
@@ -361,7 +360,7 @@ const ATSCheckerSection = () => {
                                     </div>
 
                                     <div className="pt-6 border-t border-stone-200 flex flex-col sm:flex-row justify-between items-center gap-4">
-                                        <button 
+                                        <button
                                             onClick={() => navigate('/ats-checker/fix', { state: { resumeText, jobDescription, atsResults: results } })}
                                             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#16324f] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#0f2438]"
                                         >
