@@ -14,6 +14,9 @@ const LoginPage = () => {
   const [message, setMessage] = useState(location.state?.notice || '');
   const [submitting, setSubmitting] = useState(false);
 
+  const searchParams = location.search;
+  const signupUrl = `/signup${searchParams}`;
+
   const validate = () => {
     const nextErrors = {};
     if (!form.email.trim()) {
@@ -37,12 +40,13 @@ const LoginPage = () => {
 
     setSubmitting(true);
     try {
-      const response = await login({ email: form.email.trim(), password: form.password });
-      const searchParams = new URLSearchParams(location.search);
-      const redirectTarget = searchParams.get('redirect') || '/dashboard';
+      const normalizedEmail = form.email.trim().toLowerCase();
+      await login({ email: normalizedEmail, password: form.password });
+      const queryParams = new URLSearchParams(location.search);
+      const redirectTarget = queryParams.get('redirect') || '/dashboard';
       navigate(redirectTarget, { replace: true });
     } catch (error) {
-      setServerError(error.message || 'Unable to sign in.');
+      setServerError(error.message || 'Unable to sign in. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -53,7 +57,7 @@ const LoginPage = () => {
       eyebrow="Sign in"
       title="Welcome back to your interview workspace."
       description="Log in with your verified account to continue sessions, review feedback, and keep your workspace in sync."
-      actionLink={{ to: '/signup', label: 'Create account' }}
+      actionLink={{ to: signupUrl, label: 'Create account' }}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="rounded-[24px] border border-stone-200 bg-[#f8f4ec] px-4 py-4">
@@ -99,7 +103,7 @@ const LoginPage = () => {
 
         <div className="flex items-center justify-between text-sm">
           <span className="text-slate-500">Complete your profile after signing in.</span>
-          <Link to="/signup" className="font-semibold text-slate-500 transition hover:text-slate-800">
+          <Link to={signupUrl} className="font-semibold text-slate-500 transition hover:text-slate-800">
             Create account
           </Link>
         </div>

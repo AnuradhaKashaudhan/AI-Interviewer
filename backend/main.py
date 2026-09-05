@@ -18,6 +18,7 @@ else:
     load_dotenv()
 
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 import jwt
 
 
@@ -35,6 +36,7 @@ from auth import (
     create_access_token, 
     create_refresh_token, 
     get_current_user,
+    normalize_email,
     REFRESH_SECRET_KEY,
     SECRET_KEY,
     ALGORITHM
@@ -218,29 +220,62 @@ def rag_health():
 
 # --- Auth Endpoints ---
 
-@app.post("/api/auth/signup")
-def signup(request: SignupRequest, db: Session = Depends(get_db)):
-    if db.query(User).filter(User.email == request.email).first():
-        raise HTTPException(status_code=400, detail="Email already registered")
-    
-    hashed_password = get_password_hash(request.password)
-    new_user = User(
-        email=request.email,
-        fullName=request.fullName,
-        hashed_password=hashed_password
-    )
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    return {"message": "User created successfully"}
+# --- Auth Endpoints ---
 
 IS_PROD = os.getenv("ENVIRONMENT", "").lower() in ("production", "prod") or "onrender.com" in os.getenv("RENDER_EXTERNAL_URL", "") or "onrender.com" in os.getenv("FRONTEND_URL", "https://careerpilot-frontend-ei74.onrender.com")
 COOKIE_SECURE = IS_PROD
 COOKIE_SAMESITE = "none" if IS_PROD else "lax"
 
+@app.post("/api/auth/signup")
+def signup(request: SignupRequest, db: Session = Depends(get_db)):
+    normalized_email = normalize_email(request.email)
+    if not normalized_email:
+        raise HTTPException(status_code=400, detail="A valid email is required.")
+        
+    try:
+        existing_user = db.query(User).filter(func.lower(User.email) == normalized_email).first()
+    except Exception as e:
+        print(f"Database error during signup email check: {e}")
+        raise HTTPException(status_code=500, detail="Unable to process request right now. Please try again.")
+
+    if existing_user:
+        raise HTTPException(
+            status_code=400,
+            detail="An account already exists with this email. Please sign in instead."
+        )
+    
+    hashed_password = get_password_hash(request.password)
+    new_user = User(
+        email=normalized_email,
+        fullName=request.fullName.strip() if request.fullName else "",
+        hashed_password=hashed_password
+    )
+    try:
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+    except Exception as e:
+        db.rollback()
+        print(f"Database error during user creation: {e}")
+        raise HTTPException(status_code=500, detail="Unable to create account right now. Please try again.")
+
+    return {"message": "User created successfully"}
+
 @app.post("/api/auth/login")
 def login(request: LoginRequest, response: Response, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == request.email).first()
+    normalized_email = normalize_email(request.email)
+    if not normalized_email or not request.password:
+        raise HTTPException(status_code=400, detail="Incorrect email or password")
+    
+    try:
+        user = db.query(User).filter(func.lower(User.email) == normalized_email).first()
+    except Exception as e:
+        print(f"Database error during login user query: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to sign in right now. Please try again."
+        )
+
     if not user or not verify_password(request.password, user.hashed_password):
         raise HTTPException(status_code=400, detail="Incorrect email or password")
     
@@ -272,7 +307,12 @@ def refresh_token(request: Request, response: Response, db: Session = Depends(ge
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid refresh token")
         
-    user = db.query(User).filter(User.id == user_id).first()
+    try:
+        user = db.query(User).filter(User.id == user_id).first()
+    except Exception as e:
+        print(f"Database error during refresh token query: {e}")
+        raise HTTPException(status_code=500, detail="Database unavailable. Please try again.")
+
     if user is None:
         raise HTTPException(status_code=401, detail="User not found")
         
@@ -299,8 +339,8 @@ def logout(response: Response):
     response.delete_cookie(
         key="refresh_token",
         httponly=True,
-        secure=False,
-        samesite="lax"
+        secure=COOKIE_SECURE,
+        samesite=COOKIE_SAMESITE
     )
     return {"message": "Successfully logged out"}
 
