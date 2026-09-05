@@ -37,7 +37,7 @@ import {
 } from 'lucide-react';
 import { getPreferredVoice } from "./services/voiceService";
 import { useLocation, useNavigate } from 'react-router-dom';
-import { getAuthToken } from './services/authApi.js';
+import { getAuthToken, apiFetch } from './services/authApi.js';
 import CodingRoundCard from './components/interview/CodingRoundCard';
 import DraggableWebcam from './components/interview/DraggableWebcam';
 import { API_BASE_URL, buildApiUrl } from './utils/apiConfig.js';
@@ -96,25 +96,16 @@ const Waveform = () => {
 
 const InterviewPage = () => {
     const navigate = useNavigate();
-    const apiFetch = async (url, options = {}) => {
-        const token = getAuthToken();
-        const headers = { ...options.headers };
-        if (token) headers['Authorization'] = `Bearer ${token}`;
-        
-        const response = await fetch(url, { ...options, headers });
-        if (response.status === 401) {
-            navigate('/login', { state: { notice: 'Session expired. Please log in again.' } });
-            throw new Error('Unauthorized');
-        }
-        return response;
-    };
     const location = useLocation();
     const interviewSetup = location.state?.setup;
     const [sessionId, setSessionId] = useState(null);
     const [question, setQuestion] = useState("");
-  const activeQuestion = question;
+    const activeQuestion = question;
     const [audioUrl, setAudioUrl] = useState("");
     const [feedback, setFeedback] = useState(null);
+    const [hasSubmittedCoding, setHasSubmittedCoding] = useState(false);
+    const [nextQuestionError, setNextQuestionError] = useState("");
+
     const [isRecording, setIsRecording] = useState(false);
     const [isMuted, setIsMuted] = useState(false);
     const [isSpeaking, setIsSpeaking] = useState(false);
@@ -786,6 +777,8 @@ const handleResumeUpload = async (event) => {
 
     const fetchNextQuestion = async () => {
         setFeedback(null);
+        setHasSubmittedCoding(false);
+        setNextQuestionError('');
         setLoading(true);
         setLoadingStatus("Analyzing context & generating next adaptive question...");
         try {
@@ -794,6 +787,10 @@ const handleResumeUpload = async (event) => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ session_id: sessionId })
             });
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.detail || errData.message || `Failed to fetch next question (status ${response.status})`);
+            }
             const data = await response.json();
             if (data.question) {
                 setQuestion(data.question);
@@ -809,10 +806,13 @@ const handleResumeUpload = async (event) => {
             }
         } catch (err) {
             console.error("Error fetching next question:", err);
+            setNextQuestionError(err.message || 'Unable to fetch next question. Please check connection and try again.');
+        } finally {
+            setLoading(false);
+            setLoadingStatus("");
         }
-        setLoading(false);
-        setLoadingStatus("");
     };
+
 
     const startRecording = () => {
         if (!stream) return;
@@ -1463,6 +1463,10 @@ const handleResumeUpload = async (event) => {
                                     apiFetch={apiFetch}
                                     onNextQuestion={fetchNextQuestion}
                                     recordMonitoringEvent={recordMonitoringEvent}
+                                    onCodeSubmitted={(evalData) => {
+                                        setFeedback(evalData);
+                                        setHasSubmittedCoding(true);
+                                    }}
                                 />
                             ) : (
                                 <div className="surface-card p-8 flex-1 flex flex-col justify-between">
@@ -1566,18 +1570,33 @@ const handleResumeUpload = async (event) => {
                             </motion.div>
                         )}
                         
-                        <button 
-                            disabled={!feedback} 
-                            onClick={fetchNextQuestion}
-                            className={`w-full py-3.5 rounded-full font-bold flex items-center justify-center gap-2 text-sm transition-all ${
-                                feedback 
-                                ? 'secondary-action' 
-                                : 'bg-white text-slate-400 cursor-not-allowed border border-stone-200'
-                            }`}
-                        >
-                            <BarChart3 className="w-4 h-4" />
-                            Next Question
-                        </button>
+                        {nextQuestionError && (
+                            <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center justify-between gap-2">
+                                <span>{nextQuestionError}</span>
+                                <button onClick={() => setNextQuestionError('')} className="font-bold underline text-rose-800">Dismiss</button>
+                            </div>
+                        )}
+
+                        {(() => {
+                            const canGoNext = Boolean(feedback || (currentQuestionType === 'coding' && hasSubmittedCoding));
+                            return (
+                                <button 
+                                    disabled={loading || !canGoNext} 
+                                    onClick={fetchNextQuestion}
+                                    className={`w-full py-3.5 rounded-full font-bold flex items-center justify-center gap-2 text-sm transition-all ${
+                                        loading 
+                                        ? 'bg-amber-50 text-amber-900 border border-amber-200 cursor-wait'
+                                        : canGoNext 
+                                        ? 'secondary-action' 
+                                        : 'bg-white text-slate-400 cursor-not-allowed border border-stone-200'
+                                    }`}
+                                >
+                                    {loading ? <Loader2 className="w-4 h-4 animate-spin text-[#8a5d2f]" /> : <BarChart3 className="w-4 h-4" />}
+                                    {loading ? "Fetching Next Question..." : "Next Question"}
+                                </button>
+                            );
+                        })()}
+
 
                         <button 
                             disabled={!interviewStarted}

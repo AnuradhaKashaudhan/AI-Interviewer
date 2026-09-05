@@ -22,7 +22,7 @@ import {
 
 import { API_BASE_URL, buildApiUrl } from '../../utils/apiConfig.js';
 
-const CodingRoundCard = ({ sessionId, apiFetch, onNextQuestion, recordMonitoringEvent }) => {
+const CodingRoundCard = ({ sessionId, apiFetch, onNextQuestion, recordMonitoringEvent, onCodeSubmitted }) => {
   const [questionData, setQuestionData] = useState(null);
   const [loadingQuestion, setLoadingQuestion] = useState(true);
   const [errorNotice, setErrorNotice] = useState('');
@@ -136,6 +136,9 @@ const CodingRoundCard = ({ sessionId, apiFetch, onNextQuestion, recordMonitoring
       const data = await res.json();
       setSubmitResults(data);
       setHasSubmitted(true);
+      if (onCodeSubmitted) {
+        onCodeSubmitted(data.evaluation || data);
+      }
     } catch (err) {
       console.error('Submit code error:', err);
       setErrorNotice('Code evaluation failed. Please check network and try submitting again.');
@@ -143,6 +146,7 @@ const CodingRoundCard = ({ sessionId, apiFetch, onNextQuestion, recordMonitoring
       setSubmitLoading(false);
     }
   };
+
 
   if (loadingQuestion) {
     return (

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { authApi, setAuthToken, getAuthToken } from '../services/authApi.js';
+import { authApi, setAuthToken, getAuthToken, onTokenRefresh } from '../services/authApi.js';
 import { buildApiUrl } from '../utils/apiConfig.js';
 
 const AuthContext = createContext(null);
@@ -57,7 +57,12 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     silentRefresh();
 
-    // Setup silent refresh before token expires (e.g. 14 mins for a 15 min token)
+    // Subscribe to auto-refresh events triggered by apiFetch interceptor
+    const unsubscribe = onTokenRefresh((data) => {
+      handleAuthResponse(data);
+    });
+
+    // Setup silent refresh before token expires (50 mins for a 60 min token)
     const interval = setInterval(() => {
       const currentToken = getAuthToken() || localStorage.getItem('access_token');
       if (currentToken) {
@@ -68,9 +73,12 @@ export const AuthProvider = ({ children }) => {
           setEntitlements(null);
         });
       }
-    }, 14 * 60 * 1000);
+    }, 50 * 60 * 1000);
 
-    return () => clearInterval(interval);
+    return () => {
+      unsubscribe();
+      clearInterval(interval);
+    };
   }, []);
 
   const signup = async (payload) => {
@@ -114,4 +122,4 @@ export const useAuth = () => {
     throw new Error('useAuth must be used within AuthProvider.');
   }
   return context;
-};
+};

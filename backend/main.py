@@ -642,6 +642,12 @@ def submit_code_endpoint(
         else:
             new_answer.transcript_text = f"Submitted in {request.language}:\n\n{request.code}"
 
+        from modules.interview_manager import _pick_question, _topic_pool, _candidate_topics
+        asked_q_texts = {q.question_text for q in db.query(Question).filter(Question.session_id == session_id).all()}
+        next_q_prompt = _pick_question(_topic_pool(_candidate_topics(session.role, session.skills)), asked_q_texts)
+        if not next_q_prompt:
+            next_q_prompt = f"What design patterns or architectural tradeoffs do you prioritize when building scalable systems as a {session.role or 'developer'}?"
+
         new_eval = db.query(Evaluation).filter(Evaluation.answer_id == new_answer.id).first()
         if not new_eval:
             new_eval = Evaluation(
@@ -656,7 +662,7 @@ def submit_code_endpoint(
                 strengths=eval_result["strengths"],
                 weaknesses=eval_result["weaknesses"],
                 suggested_answer=eval_result["suggested_answer"],
-                next_question_suggestion="Great work completing the live coding round!",
+                next_question_suggestion=next_q_prompt,
                 answer_quality=eval_result["answer_quality"]
             )
             db.add(new_eval)

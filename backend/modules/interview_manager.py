@@ -250,13 +250,15 @@ def next_question(db: Session, session_id: str, user_id: str) -> Optional[str]:
     last_question = questions[-1] if questions else None
     pending_q = None
     if last_question and last_question.answer and last_question.answer.evaluation:
-        pending_q = last_question.answer.evaluation.next_question_suggestion
+        cand_q = last_question.answer.evaluation.next_question_suggestion
+        if cand_q and not cand_q.startswith("Great work") and "completing" not in cand_q.lower():
+            pending_q = cand_q
 
     if not pending_q:
         # Fallback to generating one
         pending_q = _pick_question(_topic_pool(_candidate_topics(session.role, session.skills)), asked_questions)
         if not pending_q:
-            pending_q = "Could you tell me more about your technical background?"
+            pending_q = f"Could you walk me through a major technical decision or architecture choice you made as a {session.role or 'developer'}?"
 
     # Check if we should insert the coding round
     coding_round_enabled = detect_coding_round_recommendation(
