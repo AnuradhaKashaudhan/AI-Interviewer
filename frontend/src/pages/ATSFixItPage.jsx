@@ -4,8 +4,7 @@ import { ArrowLeft, Loader2 } from 'lucide-react';
 import FixItEditor from '../components/ats/FixItEditor.jsx';
 import FixItScorecard from '../components/ats/FixItScorecard.jsx';
 import { runClientHeuristics } from '../utils/atsHeuristics.js';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+import { API_BASE_URL, buildApiUrl } from '../utils/apiConfig.js';
 
 const ATSFixItPage = () => {
   const location = useLocation();
@@ -68,7 +67,7 @@ const ATSFixItPage = () => {
     
     try {
         setIsReanalyzing(true);
-        const response = await fetch(`${API_BASE_URL}/api/ats-recheck`, {
+        const response = await fetch(buildApiUrl('/api/ats-recheck'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

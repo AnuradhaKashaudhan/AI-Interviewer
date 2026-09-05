@@ -20,7 +20,7 @@ import {
   RotateCcw
 } from 'lucide-react';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+import { API_BASE_URL, buildApiUrl } from '../../utils/apiConfig.js';
 
 const CodingRoundCard = ({ sessionId, apiFetch, onNextQuestion, recordMonitoringEvent }) => {
   const [questionData, setQuestionData] = useState(null);

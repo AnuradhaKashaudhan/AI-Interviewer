@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { authApi, setAuthToken, getAuthToken } from '../services/authApi.js';
+import { buildApiUrl } from '../utils/apiConfig.js';
 
 const AuthContext = createContext(null);
 
@@ -16,7 +17,7 @@ export const AuthProvider = ({ children }) => {
       return;
     }
     try {
-      const res = await fetch('/api/user/entitlements', {
+      const res = await fetch(buildApiUrl('/api/user/entitlements'), {
         headers: { Authorization: `Bearer ${currentToken}` },
       });
       if (res.ok) {

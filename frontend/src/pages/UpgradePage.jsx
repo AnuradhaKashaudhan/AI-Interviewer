@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { ShieldCheck, Check, ArrowRight, Loader2, Sparkles, AlertCircle, CreditCard, Lock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getAuthToken } from '../services/authApi.js';
+import { buildApiUrl } from '../utils/apiConfig.js';
 
 const loadRazorpayScript = () => {
   return new Promise((resolve) => {
@@ -35,7 +36,7 @@ const UpgradePage = () => {
       setLoading(true);
       setError('');
       try {
-        const response = await fetch('/api/plans');
+        const response = await fetch(buildApiUrl('/api/plans'));
         const data = await response.json();
         const found = (data.plans || []).find((p) => p.id.toLowerCase() === planId.toLowerCase());
         if (found) {
@@ -75,7 +76,7 @@ const UpgradePage = () => {
     try {
       const token = getAuthToken() || localStorage.getItem('access_token');
       // 1. Create Razorpay Order on Backend
-      const orderRes = await fetch('/api/payments/create-order', {
+      const orderRes = await fetch(buildApiUrl('/api/payments/create-order'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -107,7 +108,7 @@ const UpgradePage = () => {
         handler: async function (response) {
           try {
             // 4. Verify Payment Signature Server-Side
-            const verifyRes = await fetch('/api/payments/verify', {
+            const verifyRes = await fetch(buildApiUrl('/api/payments/verify'), {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',

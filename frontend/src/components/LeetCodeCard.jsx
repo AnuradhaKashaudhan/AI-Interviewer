@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 
 import { getAuthToken } from '../services/authApi.js';
+import { buildApiUrl } from '../utils/apiConfig.js';
 
 function cleanLeetCodeUsername(input) {
   if (!input) return '';
@@ -54,7 +55,7 @@ async function apiCall(path, method = 'GET', body = null) {
     },
   };
   if (body) opts.body = JSON.stringify(body);
-  const res = await fetch(path, opts);
+  const res = await fetch(buildApiUrl(path), opts);
   if (res.status === 404 && method === 'GET') return null;
   const data = await res.json();
   if (!res.ok) throw new Error(data.detail || 'LeetCode API request failed.');

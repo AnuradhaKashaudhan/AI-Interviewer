@@ -1,7 +1,4 @@
-// When VITE_AUTH_API_BASE_URL is not set, use '' (empty string = relative URL).
-// Vite proxy will forward /api/* to the FastAPI backend on port 8000.
-// This avoids any CORS issue since requests are same-origin from the browser's perspective.
-const AUTH_API_BASE_URL = (import.meta.env.VITE_AUTH_API_BASE_URL || '').replace(/\/$/, '');
+import { buildApiUrl } from '../utils/apiConfig.js';
 
 let inMemoryToken = null;
 
@@ -14,8 +11,7 @@ export const getAuthToken = () => {
 };
 
 const buildAuthUrl = (path) => {
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-  return `${AUTH_API_BASE_URL}${normalizedPath}`;
+  return buildApiUrl(path);
 };
 
 const requestAuth = async (path, options = {}) => {
@@ -54,5 +50,7 @@ export const authApi = {
   logout: () => requestAuth('/api/auth/logout', { method: 'POST' }),
   updateProfile: (body) => requestAuth('/api/auth/profile', { method: 'PUT', body: JSON.stringify(body) }),
 };
+
+const AUTH_API_BASE_URL = buildApiUrl('');
 
 export { AUTH_API_BASE_URL, buildAuthUrl };

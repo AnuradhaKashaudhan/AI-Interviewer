@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getAuthToken } from '../services/authApi.js';
+import { buildApiUrl } from '../utils/apiConfig.js';
 
 const DashboardPage = () => {
   const navigate = useNavigate();
@@ -41,9 +42,9 @@ const DashboardPage = () => {
 
       // Fetch entitlements, latest career intelligence recommendation, and audit logs
       const [entRes, recRes, auditRes] = await Promise.all([
-        fetch('/api/user/entitlements', { headers }).catch(() => null),
-        fetch('/api/career-intelligence/latest', { headers }).catch(() => null),
-        fetch('/api/audit-logs', { headers }).catch(() => null),
+        fetch(buildApiUrl('/api/user/entitlements'), { headers }).catch(() => null),
+        fetch(buildApiUrl('/api/career-intelligence/latest'), { headers }).catch(() => null),
+        fetch(buildApiUrl('/api/audit-logs'), { headers }).catch(() => null),
       ]);
 
       if (entRes && entRes.ok) {

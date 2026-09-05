@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 
 import { getAuthToken } from '../services/authApi.js';
+import { buildApiUrl } from '../utils/apiConfig.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -61,7 +62,7 @@ function timeAgo(isoString) {
 
 async function apiLinkGithub(username) {
   const token = getAuthToken();
-  const res = await fetch('/api/coding-profile/github/link', {
+  const res = await fetch(buildApiUrl('/api/coding-profile/github/link'), {
     method: 'POST',
     credentials: 'include',
     headers: {
@@ -77,7 +78,7 @@ async function apiLinkGithub(username) {
 
 async function apiGetGithub() {
   const token = getAuthToken();
-  const res = await fetch('/api/coding-profile/github', {
+  const res = await fetch(buildApiUrl('/api/coding-profile/github'), {
     credentials: 'include',
     headers: {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -91,7 +92,7 @@ async function apiGetGithub() {
 
 async function apiRefreshGithub() {
   const token = getAuthToken();
-  const res = await fetch('/api/coding-profile/github/refresh', {
+  const res = await fetch(buildApiUrl('/api/coding-profile/github/refresh'), {
     method: 'POST',
     credentials: 'include',
     headers: {

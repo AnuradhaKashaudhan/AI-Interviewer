@@ -40,10 +40,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { getAuthToken } from './services/authApi.js';
 import CodingRoundCard from './components/interview/CodingRoundCard';
 import DraggableWebcam from './components/interview/DraggableWebcam';
+import { API_BASE_URL, buildApiUrl } from './utils/apiConfig.js';
 
-// Use relative URL so Vite dev proxy forwards /api/* to FastAPI on port 8000.
-// In production, set VITE_API_BASE_URL to your deployed backend URL.
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 const MONITORING_CONSENT_KEY = 'ai-interviewer-monitoring-consent-v1';
 const MONITORING_ENABLED_KEY = 'ai-interviewer-monitoring-enabled';
 
@@ -684,7 +682,7 @@ const handleResumeUpload = async (event) => {
   formData.append('file', file);
 
   try {
-    const uploadUrl = "http://127.0.0.1:8000/api/upload-resume";
+    const uploadUrl = buildApiUrl('/api/upload-resume');
   console.log("FINAL Resume upload URL:", uploadUrl);
   const response = await apiFetch(uploadUrl, {
       method: 'POST',

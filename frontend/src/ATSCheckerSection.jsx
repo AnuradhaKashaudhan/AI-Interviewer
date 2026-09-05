@@ -16,8 +16,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ATSParsingSequence from './components/ats/ATSParsingSequence.jsx';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+import { API_BASE_URL, buildApiUrl } from './utils/apiConfig.js';
 
 const ATSCheckerSection = () => {
     const [resumeFile, setResumeFile] = useState(null);
@@ -48,7 +47,7 @@ const ATSCheckerSection = () => {
         formData.append('file', file);
 
         try {
-            const response = await fetch(`${API_BASE_URL}/api/upload-resume`, {
+            const response = await fetch(buildApiUrl('/api/upload-resume'), {
                 method: 'POST',
                 body: formData,
             });
@@ -85,7 +84,7 @@ const ATSCheckerSection = () => {
         
         try {
             const [atsResponse, mlResponse] = await Promise.all([
-                fetch(`${API_BASE_URL}/api/check-ats`, {
+                fetch(buildApiUrl('/api/check-ats'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -93,7 +92,7 @@ const ATSCheckerSection = () => {
                         job_description: jobDescription
                     })
                 }),
-                fetch(`${API_BASE_URL}/api/ml/resume-job-match`, {
+                fetch(buildApiUrl('/api/ml/resume-job-match'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({

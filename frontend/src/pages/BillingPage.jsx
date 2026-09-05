@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { CreditCard, Receipt, ShieldCheck, Sparkles, Loader2, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getAuthToken } from '../services/authApi.js';
+import { buildApiUrl } from '../utils/apiConfig.js';
 
 const BillingPage = () => {
   const [loading, setLoading] = useState(true);
@@ -19,8 +20,8 @@ const BillingPage = () => {
 
         // Fetch entitlements & payment history
         const [entRes, histRes] = await Promise.all([
-          fetch('/api/user/entitlements', { headers }),
-          fetch('/api/payments/history', { headers }),
+          fetch(buildApiUrl('/api/user/entitlements'), { headers }),
+          fetch(buildApiUrl('/api/payments/history'), { headers }),
         ]);
 
         if (entRes.ok) {
