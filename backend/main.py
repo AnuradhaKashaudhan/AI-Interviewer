@@ -149,16 +149,20 @@ class CareerAnalysisRequest(BaseModel):
     target_role: Optional[str] = None
 
 # Allow CORS for main frontend
+frontend_url = os.getenv("FRONTEND_URL", "https://careerpilot-frontend-ei74.onrender.com")
+
 origins = [
     "http://localhost:5173",
     "http://localhost:5174",
     "http://127.0.0.1:5173",
     "http://127.0.0.1:5174",
+    "https://careerpilot-frontend-ei74.onrender.com",
+    frontend_url
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=list(set(origins)),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -229,6 +233,10 @@ def signup(request: SignupRequest, db: Session = Depends(get_db)):
     db.refresh(new_user)
     return {"message": "User created successfully"}
 
+IS_PROD = os.getenv("ENVIRONMENT", "").lower() in ("production", "prod") or "onrender.com" in os.getenv("RENDER_EXTERNAL_URL", "") or "onrender.com" in os.getenv("FRONTEND_URL", "https://careerpilot-frontend-ei74.onrender.com")
+COOKIE_SECURE = IS_PROD
+COOKIE_SAMESITE = "none" if IS_PROD else "lax"
+
 @app.post("/api/auth/login")
 def login(request: LoginRequest, response: Response, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == request.email).first()
@@ -242,8 +250,8 @@ def login(request: LoginRequest, response: Response, db: Session = Depends(get_d
         key="refresh_token",
         value=refresh_token,
         httponly=True,
-        secure=False, # Set to False for local HTTP dev, True for production HTTPS
-        samesite="lax",
+        secure=COOKIE_SECURE,
+        samesite=COOKIE_SAMESITE,
         max_age=7 * 24 * 60 * 60
     )
     
@@ -274,8 +282,8 @@ def refresh_token(request: Request, response: Response, db: Session = Depends(ge
         key="refresh_token",
         value=new_refresh_token,
         httponly=True,
-        secure=False,
-        samesite="lax",
+        secure=COOKIE_SECURE,
+        samesite=COOKIE_SAMESITE,
         max_age=7 * 24 * 60 * 60
     )
     
