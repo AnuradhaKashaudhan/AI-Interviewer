@@ -179,17 +179,18 @@ const ATSCheckerSection = () => {
 
                         {/* Job Description Area */}
                         <div className="mt-8">
-                            <label className="block text-sm font-bold mb-2 text-text-muted flex items-center gap-2">
-                                <Target className="w-4 h-4" />
+                            <label className="block text-xs font-bold mb-2 text-[#16324f] uppercase tracking-wider flex items-center gap-2">
+                                <Target className="w-4 h-4 text-[#8a5d2f]" />
                                 Target Job Description (Optional)
                             </label>
                             <textarea 
-                                className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-primary/50 transition-all min-h-[150px]"
+                                className="w-full bg-white border border-stone-300 rounded-2xl p-4 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#16324f] focus:ring-2 focus:ring-[#16324f]/10 transition-all min-h-[150px] shadow-sm font-sans"
                                 placeholder="Paste the job description here for a tailored match analysis..."
                                 value={jobDescription}
                                 onChange={(e) => setJobDescription(e.target.value)}
                             />
                         </div>
+
 
                         {error && (
                             <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center gap-3 text-red-500 text-sm">
