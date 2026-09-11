@@ -1,5 +1,6 @@
 {
   "behavioral\\behavioral_notes.md": "1dec80d37c9704465ad9c4fafb5d6d9607255d7311c52ba506a1313277950516",
+  "computer_networks\\cn_notes.md": "b79dc06caf5b9efd065bfa27a28c7faf543b18b68a1b7e2e2815b0dd8d5d033d",
   "dbms\\dbms_notes.md": "b9acee6de13f18f0b7600f3249e65b1a4aeba0ba8ebc316e29e866786343fe35",
   "dsa\\dsa_notes.md": "0d2b58edafaf29dd11cd3ef57a2c345f73ed3f28d529448b08b7bab317bdb0d2",
   "java\\java_notes.md": "49b47882412b971ed1efb5d83aac1ddd9388298cd24001d6cf75fb505628642c",
@@ -7,5 +8,7 @@
   "oop\\oop_notes.md": "aebd03aa9f39a2fd215efd4782fe52d6df9e7807213d42942178f33f56debb9b",
   "operating_systems\\os_notes.md": "0aed84394b50725ab32f7b066e4308a238eac9241d8fda1636a009213a78d9f5",
   "python\\python_notes.md": "0c281a94f1286699382bad009238d4e17a1f54dc53ed3f6da0606c1bafa81349",
+  "react\\react_notes.md": "95b71fb4274c419885cac62aac7c92ba042624c910b451c013af0ed62dcf8907",
+  "sql\\sql_notes.md": "305b83e530fbd3561e16635801314a068f26cf96092ef6681e4de6906a7ee9f1",
   "web_development\\web_notes.md": "7aec3b14117a583e58def88ebb02b2702341699f665fbc8590d17f0c9b2c9d19"
 }

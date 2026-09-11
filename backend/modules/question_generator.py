@@ -1,4 +1,7 @@
 import random
+import numpy as np
+import time
+import concurrent.futures
 
 # Expanded question bank with difficulty levels and follow-up pairs
 SKILL_QUESTIONS_DB = {
@@ -288,76 +291,249 @@ def generate_questions(skills: list) -> dict:
     }
 
 
+def is_semantically_similar(new_question: str, asked_questions: list, threshold: float = 0.75) -> bool:
+    """
+    Checks if a newly generated question is semantically similar to any previously asked questions
+    using Sentence-BERT vector embeddings.
+    """
+    if not new_question or not asked_questions:
+        return False
+
+    try:
+        try:
+            from rag.embeddings import RAGEmbeddings
+        except ImportError:
+            from backend.rag.embeddings import RAGEmbeddings
+
+        embedder = RAGEmbeddings()
+        new_vec = embedder.embed_query(new_question.strip())
+        if new_vec.shape[0] == 0:
+            return False
+
+        for past_q in asked_questions:
+            if not past_q or not past_q.strip():
+                continue
+            # Exact string check
+            if new_question.strip().lower() == past_q.strip().lower():
+                return True
+
+            past_vec = embedder.embed_query(past_q.strip())
+            sim = float(np.dot(new_vec[0], past_vec[0]))
+            if sim >= threshold:
+                print(f"[RAG Deduplication] Rejected question due to high similarity ({sim:.3f}): '{new_question[:60]}...' vs '{past_q[:60]}...'")
+                return True
+    except Exception as e:
+        print(f"[RAG Deduplication] Warning during similarity check: {e}")
+        # Fallback to simple string check
+        for past_q in asked_questions:
+            if new_question.strip().lower() == past_q.strip().lower():
+                return True
+
+    return False
+
+
+def validate_question_grounding(question_text: str, context_text: str, threshold: float = 0.35) -> tuple[bool, float]:
+    """
+    Validates whether a generated question is semantically grounded in the retrieved context using Sentence-BERT embeddings.
+    Returns (is_grounded: bool, score: float).
+    """
+    if not question_text or not context_text:
+        return True, 0.50
+
+    try:
+        try:
+            from rag.embeddings import RAGEmbeddings
+        except ImportError:
+            from backend.rag.embeddings import RAGEmbeddings
+
+        embedder = RAGEmbeddings()
+        q_vec = embedder.embed_query(question_text.strip())
+        ctx_vec = embedder.embed_query(context_text.strip()[:1000])
+
+        sim = float(np.dot(q_vec[0], ctx_vec[0]))
+        score = round(max(0.0, min(1.0, sim)), 4)
+        is_grounded = score >= threshold
+        return is_grounded, score
+    except Exception as e:
+        print(f"[RAG Grounding Validation] Warning: {e}")
+        return True, 0.50
+
+
 def generate_rag_grounded_question(
     role: str,
     skills: list = None,
     topic: str = None,
     difficulty: str = "medium",
+    interview_type: str = "technical",
     persona: str = "friendly",
     resume_text: str = None,
-    asked_questions: set = None,
-    gemini_client = None
-) -> str:
+    asked_questions: list = None,
+    previous_performance: dict = None,
+    gemini_client = None,
+    return_full_metadata: bool = False
+):
     """
     Generates an interview question grounded in RAG retrieved technical knowledge chunks.
-    Falls back gracefully to non-RAG generation if RAG is disabled, unavailable, or errors out.
+    Supports candidate-aware retrieval, question types (conceptual, practical, scenario, debugging, architecture, resume-specific, follow-up),
+    semantic deduplication, and grounding validation score calculation.
     """
-    asked_questions = asked_questions or set()
+    t_start = time.time()
+    asked_list = list(asked_questions) if asked_questions else []
     skills_list = skills or []
-    
-    # 1. Attempt RAG Retrieval
+    target_topic = topic or (skills_list[0] if skills_list else role)
+
+    evidence_ids = []
+    retrieval_scores = []
     context_text = ""
+    retrievals = []
+    diagnostics = None
+    fallback_used = False
+    
+    t_retrieval_start = time.time()
+
+    # 1. Candidate-Aware RAG Retrieval & Reranking
     try:
         try:
             from rag import get_rag_service
         except ImportError:
             from backend.rag import get_rag_service
-            
+
         rag_service = get_rag_service()
-        retrievals = rag_service.retrieve_for_interview(
-            role=role,
-            topic=topic,
+        retrievals, diagnostics = rag_service.retrieve_with_diagnostics(
+            query=f"{interview_type} concepts for {target_topic}",
+            domain=target_topic.lower() if target_topic else role.lower(),
+            topic=target_topic,
+            difficulty=difficulty,
             skills=skills_list,
-            difficulty=difficulty
+            target_role=role,
+            interview_type=interview_type,
+            previous_questions=asked_list,
+            previous_performance=previous_performance,
+            top_k=5
         )
+
         if retrievals:
             context_text = rag_service.build_context_prompt(retrievals)
+            for res in retrievals:
+                meta = getattr(res, "metadata", {})
+                c_id = meta.get("chunk_id") or meta.get("metadata", {}).get("chunk_id") or "chunk_unknown"
+                score = getattr(res, "rerank_score", getattr(res, "score", 0.0))
+                evidence_ids.append(c_id)
+                retrieval_scores.append(round(score, 4))
     except Exception as e:
         print(f"[RAG Grounding] Warning: Retrieval failed or unavailable: {e}")
-        context_text = ""
 
-    # 2. If Gemini client is provided and RAG context exists, build RAG-grounded prompt
+    t_retrieval_end = time.time()
+
+    # 2. RAG Grounded Generation with Gemini
+    q_text = None
+    grounding_score = 0.50
+    t_gen_start = time.time()
+
     if gemini_client and context_text:
         skills_str = ", ".join(skills_list) if skills_list else "general technical skills"
         prompt = f"""SYSTEM INSTRUCTIONS:
 You are an expert technical interviewer ({persona} persona) interviewing a candidate for the role of '{role}'.
 
-INTERVIEW CONTEXT:
+CANDIDATE & INTERVIEW CONTEXT:
 Target Role: {role}
-Target Topic: {topic or 'Core Engineering'}
+Interview Category / Question Type: {interview_type.upper()} (conceptual, practical, scenario, debugging, architecture, resume-specific, follow-up)
+Target Topic: {target_topic}
 Target Difficulty: {difficulty}
 Candidate Skills: {skills_str}
-Resume Details: {(resume_text or '')[:1000]}
+Resume Profile: {(resume_text or '')[:1000]}
 
 RETRIEVED TECHNICAL KNOWLEDGE BASE CONTEXT:
 {context_text}
 
 TASK & GENERATION REQUIREMENTS:
 1. Use the RETRIEVED TECHNICAL KNOWLEDGE BASE CONTEXT above as your primary technical grounding for the question.
-2. Formulate one clear, high-quality, practical interview question matching the requested difficulty ({difficulty}).
+2. Formulate one clear, high-quality, {interview_type} interview question matching the requested difficulty ({difficulty}).
 3. Do NOT invent unsupported technical facts outside of the retrieved domain context.
 4. Do NOT copy the document verbatim or expose internal RAG metadata/source tags to the candidate.
-5. Do NOT repeat any previously asked questions: {list(asked_questions)[:5]}
+5. Do NOT repeat any previously asked questions: {asked_list[:5]}
 6. Return ONLY the raw question text without greetings, markdown formatting, quotes, or meta-commentary.
 """
-        try:
-            response = gemini_client.generate_content(prompt)
-            q_text = response.text.strip().strip('"').strip("'")
-            if len(q_text) > 15 and q_text not in asked_questions:
-                return q_text
-        except Exception as e:
-            print(f"[RAG Grounding] Error generating Gemini question: {e}")
+        def _call_gemini():
+            return gemini_client.generate_content(prompt)
 
-    # Fallback return None if RAG/Gemini generation was not used
-    return None
+        for attempt in range(2):
+            try:
+                # Add strict 12-second timeout per attempt to prevent hanging
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                    future = executor.submit(_call_gemini)
+                    response = future.result(timeout=12)
+
+                cand_text = response.text.strip().strip('"').strip("'")
+
+                if len(cand_text) > 15:
+                    if is_semantically_similar(cand_text, asked_list):
+                        print(f"[RAG Generation] Attempt {attempt+1}: Question was semantically duplicate. Regenerating...")
+                        continue
+
+                    # Lightweight deterministic validation instead of a second heavy LLM call
+                    is_grounded, g_score = validate_question_grounding(cand_text, context_text)
+                    grounding_score = g_score
+                    if not is_grounded and attempt == 0:
+                        print(f"[RAG Generation] Question grounding low ({g_score:.3f}). Retrying generation...")
+                        continue
+
+                    q_text = cand_text
+                    break
+            except concurrent.futures.TimeoutError:
+                print(f"[RAG Generation] Attempt {attempt+1}: Timeout exceeded (12s).")
+            except Exception as e:
+                print(f"[RAG Generation] Error generating Gemini question: {e}")
+
+    t_gen_end = time.time()
+
+    # 3. Formulate Fallback Question if RAG/Gemini was unavailable or generated empty
+    if not q_text:
+        fallback_used = True
+        q_text = None
+        
+        # Try to pull a deterministic question from SKILL_QUESTIONS_DB based on topic
+        if target_topic:
+            matched_skill = next((k for k in SKILL_QUESTIONS_DB.keys() if k.lower() == target_topic.lower()), None)
+            if matched_skill:
+                pool = SKILL_QUESTIONS_DB[matched_skill]
+                # Filter by difficulty if possible, else take any
+                diff_pool = [q for q in pool if q.get("difficulty") == difficulty.lower()]
+                if not diff_pool:
+                    diff_pool = pool
+                
+                # Pick one not in asked_list
+                for q in diff_pool:
+                    if q["question"] not in asked_list:
+                        q_text = q["question"]
+                        break
+
+        # Ultimate fallback
+        if not q_text:
+            q_text = f"Can you explain key practical principles of {target_topic} in the context of building a {role} system?"
+            
+        print(f"[QUESTION_GENERATION] generation_failed=true error='Model failed or timed out' fallback=true")
+
+    t_end = time.time()
+    
+    # Timing Logs
+    print(f"[INTERVIEW TIMING] topic_selection: {int((t_retrieval_start - t_start)*1000)} ms | "
+          f"rag_retrieval: {int((t_retrieval_end - t_retrieval_start)*1000)} ms | "
+          f"question_generation: {int((t_gen_end - t_gen_start)*1000)} ms | "
+          f"total: {int((t_end - t_start)*1000)} ms | "
+          f"fallback={str(fallback_used).lower()}")
+
+    if return_full_metadata:
+        return {
+            "question": q_text,
+            "topic": target_topic,
+            "difficulty": difficulty,
+            "question_type": interview_type,
+            "evidence_ids": evidence_ids,
+            "retrieval_scores": retrieval_scores,
+            "grounding_score": grounding_score
+        }
+
+    return q_text
+
 

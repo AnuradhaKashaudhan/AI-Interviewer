@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     FileSearch,
@@ -12,21 +12,34 @@ import {
     FileText,
     Target,
     Zap,
-    PenTool
+    PenTool,
+    RefreshCcw
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ATSParsingSequence from './components/ats/ATSParsingSequence.jsx';
-import { API_BASE_URL, buildApiUrl } from './utils/apiConfig.js';
+import { buildApiUrl } from './utils/apiConfig.js';
+import { useATS } from './context/ATSContext.jsx';
 
 const ATSCheckerSection = () => {
-    const [resumeFile, setResumeFile] = useState(null);
-    const [resumeText, setResumeText] = useState("");
-    const [jobDescription, setJobDescription] = useState("");
-    const [phase, setPhase] = useState("idle"); // 'idle', 'parsing', 'results'
-    const [isAnalyzing, setIsAnalyzing] = useState(false);
-    const [results, setResults] = useState(null);
-    const [mlResult, setMlResult] = useState(null);
-    const [error, setError] = useState(null);
+    const {
+        resumeFile,
+        resumeText,
+        resumeMetadata,
+        jobDescription,
+        phase,
+        results,
+        mlResult,
+        isAnalyzing,
+        error,
+        setAtsUpload,
+        updateJobDescription,
+        setAtsResultsData,
+        updatePhase,
+        resetAtsAnalysis,
+        setIsAnalyzing,
+        setError
+    } = useATS();
+
     const fileInputRef = useRef(null);
     const navigate = useNavigate();
 
@@ -34,15 +47,16 @@ const ATSCheckerSection = () => {
         const file = e.target.files[0];
         if (!file) return;
 
-        if (!file.name.endsWith('.pdf')) {
+        if (!file.name.toLowerCase().endsWith('.pdf')) {
             setError("Please upload a PDF file.");
             return;
         }
 
-        setResumeFile(file);
+        // Reset previous analysis when a new file is uploaded
+        resetAtsAnalysis();
         setError(null);
-
         setIsAnalyzing(true);
+
         const formData = new FormData();
         formData.append('file', file);
 
@@ -57,16 +71,20 @@ const ATSCheckerSection = () => {
             const data = await response.json();
             if (!data.extracted_text) {
                 setError("Could not extract any text from the PDF. Is it a scanned image?");
-                setResumeText("");
+                setAtsUpload(null, "", null);
             } else {
-                setResumeText(data.extracted_text);
+                setAtsUpload(file, data.extracted_text, {
+                    fileName: file.name,
+                    fileSize: file.size,
+                    fileType: file.type,
+                    storagePath: data.storage_path || ''
+                });
                 setError(null);
             }
 
         } catch (err) {
             setError("Error connecting to the backend. Please ensure the server is running.");
             console.error(err);
-            setResumeFile(null);
         } finally {
             setIsAnalyzing(false);
         }
@@ -79,8 +97,7 @@ const ATSCheckerSection = () => {
         }
 
         setIsAnalyzing(true);
-        setResults(null);
-        setMlResult(null);
+        setError(null);
 
         try {
             const [atsResponse, mlResponse] = await Promise.all([
@@ -108,22 +125,24 @@ const ATSCheckerSection = () => {
             if (!atsResponse.ok) throw new Error("ATS Check failed");
 
             const atsData = await atsResponse.json();
-            setResults(atsData);
+            let mlData = null;
 
             if (mlResponse && mlResponse.ok) {
-                const mlData = await mlResponse.json();
-                setMlResult(mlData);
+                mlData = await mlResponse.json();
             }
 
-            setPhase("parsing");
+            setAtsResultsData(atsData, mlData, 'parsing');
         } catch (err) {
             setError("ATS Analysis failed. Please try again.");
             console.error(err);
-            setPhase("idle");
+            updatePhase("idle");
         } finally {
             setIsAnalyzing(false);
         }
     };
+
+    const displayFileName = resumeFile?.name || resumeMetadata?.fileName;
+    const displayFileSize = resumeFile?.size || resumeMetadata?.fileSize;
 
     return (
         <section id="ats-checker" className="container pt-24 pb-32">
@@ -146,7 +165,11 @@ const ATSCheckerSection = () => {
                         {/* File Upload Area */}
                         <div
                             onClick={() => fileInputRef.current?.click()}
-                            className={`flex-grow border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center gap-4 transition-all cursor-pointer group ${resumeFile ? 'border-green-500/30 bg-green-500/5' : 'border-white/10 bg-white/5 hover:border-primary/30 hover:bg-primary/5'}`}
+                            className={`flex-grow border-2 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center gap-4 transition-all cursor-pointer group min-h-[240px] ${
+                                (resumeFile || resumeMetadata)
+                                    ? 'border-emerald-500/40 bg-emerald-500/5 hover:border-emerald-500/60'
+                                    : 'border-white/10 bg-white/5 hover:border-primary/30 hover:bg-primary/5'
+                            }`}
                         >
                             <input
                                 type="file"
@@ -157,17 +180,77 @@ const ATSCheckerSection = () => {
                             />
 
                             {isAnalyzing && !results ? (
-                                <Loader2 className="w-12 h-12 text-primary animate-spin" />
-                            ) : resumeFile ? (
-                                <div className="text-center">
-                                    <div className="w-16 h-16 bg-green-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                                        <FileText className="w-8 h-8 text-green-500" />
+                                <div className="text-center p-6 space-y-3">
+                                    <Loader2 className="w-10 h-10 text-[#16324f] animate-spin mx-auto" />
+                                    <p className="text-sm font-semibold text-slate-700">Extracting & analyzing document...</p>
+                                </div>
+                            ) : (resumeFile || resumeMetadata) ? (
+                                <div className="w-full flex flex-col items-center justify-center p-1">
+                                    {/* Document Preview Card */}
+                                    <div className="w-full max-w-sm bg-stone-50/95 border border-stone-200 rounded-2xl p-4 shadow-sm space-y-3 hover:border-stone-300 transition-all text-left">
+                                        {/* Header: Icon, Filename, Size, Status */}
+                                        <div className="flex items-start gap-3">
+                                            <div className="w-11 h-11 rounded-xl bg-[#16324f] text-white flex flex-col items-center justify-center flex-shrink-0 shadow-sm">
+                                                <FileText className="w-5 h-5" />
+                                                <span className="text-[8px] font-mono font-bold uppercase tracking-wider text-amber-300 -mt-0.5">PDF</span>
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <p className="font-bold text-sm text-slate-900 truncate" title={displayFileName}>
+                                                        {displayFileName || 'Uploaded_Resume.pdf'}
+                                                    </p>
+                                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200 flex-shrink-0">
+                                                        <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Parsed
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-2">
+                                                    <span>PDF Document</span>
+                                                    {displayFileSize ? (
+                                                        <>
+                                                            <span>•</span>
+                                                            <span>
+                                                                {(displayFileSize / 1024).toFixed(0)} KB
+                                                            </span>
+                                                        </>
+                                                    ) : null}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {/* Mini Document Skeleton Layout */}
+                                        <div className="w-full bg-white border border-stone-200/80 rounded-xl p-3 space-y-1.5 shadow-inner">
+                                            <div className="flex items-center justify-between">
+                                                <div className="h-2 w-1/3 bg-slate-400/70 rounded" />
+                                                <div className="h-1.5 w-1/5 bg-slate-300/60 rounded" />
+                                            </div>
+                                            <div className="h-1.5 w-full bg-stone-200 rounded" />
+                                            <div className="h-1.5 w-5/6 bg-stone-200 rounded" />
+                                            <div className="h-1.5 w-4/6 bg-stone-200 rounded" />
+                                            <div className="pt-1 flex gap-1">
+                                                <span className="px-1.5 py-0.5 bg-amber-50 border border-amber-200 rounded text-[9px] font-mono text-amber-800">SKILLS</span>
+                                                <span className="px-1.5 py-0.5 bg-indigo-50 border border-indigo-100 rounded text-[9px] font-mono text-indigo-700">EXPERIENCE</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Footer Action */}
+                                        <div className="pt-1 flex items-center justify-between text-xs border-t border-stone-200/60">
+                                            <span className="text-slate-500 text-[11px]">Click box to change PDF</span>
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    fileInputRef.current?.click();
+                                                }}
+                                                className="inline-flex items-center gap-1 font-bold text-[#16324f] hover:text-[#0f2438] hover:underline transition-colors"
+                                            >
+                                                <RefreshCcw className="w-3.5 h-3.5" />
+                                                Change file
+                                            </button>
+                                        </div>
                                     </div>
-                                    <p className="font-bold text-white mb-1">{resumeFile.name}</p>
-                                    <p className="text-xs text-text-muted underline">Change file</p>
                                 </div>
                             ) : (
-                                <div className="text-center">
+                                <div className="text-center p-6">
                                     <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-primary/20 transition-colors">
                                         <Upload className="w-8 h-8 text-text-muted group-hover:text-primary transition-colors" />
                                     </div>
@@ -179,15 +262,15 @@ const ATSCheckerSection = () => {
 
                         {/* Job Description Area */}
                         <div className="mt-8">
-                            <label className="block text-sm font-bold mb-2 text-text-muted flex items-center gap-2">
-                                <Target className="w-4 h-4" />
+                            <label className="block text-sm font-bold mb-2 text-slate-700 flex items-center gap-2">
+                                <Target className="w-4 h-4 text-[#16324f]" />
                                 Target Job Description (Optional)
                             </label>
                             <textarea
-                                className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-primary/50 transition-all min-h-[150px]"
+                                className="w-full bg-white border border-stone-300 rounded-xl p-4 text-sm text-slate-900 font-medium placeholder:text-slate-400 focus:outline-none focus:border-[#16324f] focus:ring-2 focus:ring-[#16324f]/10 transition-all min-h-[150px] shadow-sm"
                                 placeholder="Paste the job description here for a tailored match analysis..."
                                 value={jobDescription}
-                                onChange={(e) => setJobDescription(e.target.value)}
+                                onChange={(e) => updateJobDescription(e.target.value)}
                             />
                         </div>
 
@@ -239,7 +322,7 @@ const ATSCheckerSection = () => {
                                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
                                     <ATSParsingSequence
                                         results={results}
-                                        onComplete={() => setPhase("results")}
+                                        onComplete={() => updatePhase("results")}
                                     />
                                 </motion.div>
                             ) : (
@@ -257,17 +340,17 @@ const ATSCheckerSection = () => {
                                         <div className="flex items-center gap-4">
                                             <div className="text-right">
                                                 <div className="section-eyebrow">Overall Score</div>
-                                                <div className={`text-4xl font-black ${results.score >= 80 ? 'text-emerald-700' : results.score >= 60 ? 'text-amber-800' : 'text-rose-700'}`}>
-                                                    {results.score}%
+                                                <div className={`text-4xl font-black ${results?.score >= 80 ? 'text-emerald-700' : results?.score >= 60 ? 'text-amber-800' : 'text-rose-700'}`}>
+                                                    {results?.score || 0}%
                                                 </div>
                                             </div>
                                             <div className="w-16 h-16 rounded-2xl bg-stone-50 border border-stone-200 flex items-center justify-center relative overflow-hidden">
                                                 <motion.div
                                                     initial={{ height: 0 }}
-                                                    animate={{ height: `${results.score}%` }}
-                                                    className={`absolute bottom-0 left-0 right-0 ${results.score >= 80 ? 'bg-emerald-100' : results.score >= 60 ? 'bg-amber-100' : 'bg-rose-100'}`}
+                                                    animate={{ height: `${results?.score || 0}%` }}
+                                                    className={`absolute bottom-0 left-0 right-0 ${results?.score >= 80 ? 'bg-emerald-100' : results?.score >= 60 ? 'bg-amber-100' : 'bg-rose-100'}`}
                                                 />
-                                                <TrendingUp className={`w-8 h-8 relative z-10 ${results.score >= 80 ? 'text-emerald-700' : results.score >= 60 ? 'text-amber-800' : 'text-rose-700'}`} />
+                                                <TrendingUp className={`w-8 h-8 relative z-10 ${results?.score >= 80 ? 'text-emerald-700' : results?.score >= 60 ? 'text-amber-800' : 'text-rose-700'}`} />
                                             </div>
                                         </div>
                                     </div>
@@ -312,7 +395,7 @@ const ATSCheckerSection = () => {
                                                 <CheckCircle2 className="w-3 h-3 text-emerald-700" /> Key Strengths
                                             </div>
                                             <div className="space-y-2">
-                                                {results.strengths.map((s, i) => (
+                                                {(results?.strengths || []).map((s, i) => (
                                                     <div key={i} className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 flex items-start gap-2">
                                                         <div className="w-1 h-1 bg-emerald-700 rounded-full mt-1.5 flex-shrink-0" />
                                                         {s}
@@ -325,7 +408,7 @@ const ATSCheckerSection = () => {
                                                 <AlertCircle className="w-3 h-3 text-amber-800" /> Missing Keywords
                                             </div>
                                             <div className="flex flex-wrap gap-2">
-                                                {results.missing_keywords.length > 0 ? results.missing_keywords.map((k, i) => (
+                                                {(results?.missing_keywords || []).length > 0 ? (results?.missing_keywords || []).map((k, i) => (
                                                     <span key={i} className="px-2 py-1 bg-white border border-stone-200 rounded-lg text-xs text-slate-600">
                                                         {k}
                                                     </span>
@@ -340,7 +423,7 @@ const ATSCheckerSection = () => {
                                     <div className="space-y-4">
                                         <div className="section-eyebrow">Recommended Improvements</div>
                                         <div className="grid grid-cols-1 gap-3">
-                                            {results.improvement_suggestions.map((inv, i) => (
+                                            {(results?.improvement_suggestions || []).map((inv, i) => (
                                                 <div key={i} className="p-4 bg-stone-50 border border-stone-200 rounded-2xl flex items-center justify-between group hover:border-stone-300 transition-all">
                                                     <div className="flex items-center gap-4">
                                                         <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-[#16324f] border border-stone-200 group-hover:scale-110 transition-transform">
@@ -351,7 +434,7 @@ const ATSCheckerSection = () => {
                                                     <ArrowRight className="w-4 h-4 text-[#16324f] opacity-0 group-hover:opacity-100 transition-all translate-x-[-10px] group-hover:translate-x-0" />
                                                 </div>
                                             ))}
-                                            {results.feedback.map((f, i) => (
+                                            {(results?.feedback || []).map((f, i) => (
                                                 <div key={`f-${i}`} className="p-4 bg-white border border-stone-200 rounded-2xl text-xs text-slate-600">
                                                     {f}
                                                 </div>
@@ -370,7 +453,7 @@ const ATSCheckerSection = () => {
                                         </button>
                                         <div className="flex items-center gap-4">
                                             <p className="text-xs text-slate-500 italic hidden md:block">Want a full rewrite? <span className="text-[#16324f] font-bold cursor-pointer hover:underline">Upgrade to Pro</span></p>
-                                            <button onClick={() => { setResults(null); setPhase("idle"); }} className="text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors whitespace-nowrap">Reset Analysis</button>
+                                            <button onClick={resetAtsAnalysis} className="text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors whitespace-nowrap">Reset Analysis</button>
                                         </div>
                                     </div>
                                 </motion.div>

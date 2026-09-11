@@ -71,6 +71,47 @@ def create_db_engine():
     return create_engine(DEFAULT_SQLITE_URL, connect_args={"check_same_thread": False})
 
 engine = create_db_engine()
+
+def ensure_rag_columns(target_engine):
+    """Safely adds missing RAG traceability columns to existing questions and evaluations tables."""
+    try:
+        from sqlalchemy import text
+        with target_engine.connect() as conn:
+            q_cols = [
+                ("topic", "VARCHAR"),
+                ("evidence_ids", "TEXT"),
+                ("retrieval_scores", "TEXT"),
+                ("grounding_score", "FLOAT")
+            ]
+            for col_name, col_type in q_cols:
+                try:
+                    conn.execute(text(f"ALTER TABLE questions ADD COLUMN {col_name} {col_type}"))
+                    conn.commit()
+                except Exception:
+                    pass
+
+            e_cols = [
+                ("evidence_ids", "TEXT"),
+                ("retrieval_scores", "TEXT"),
+                ("semantic_similarity", "FLOAT"),
+                ("missing_concepts", "TEXT"),
+                ("technical_errors", "TEXT"),
+                ("evidence_coverage", "FLOAT"),
+                ("qa_relevance", "FLOAT"),
+                ("evaluation_confidence", "FLOAT"),
+                ("scoring_version", "VARCHAR")
+            ]
+            for col_name, col_type in e_cols:
+                try:
+                    conn.execute(text(f"ALTER TABLE evaluations ADD COLUMN {col_name} {col_type}"))
+                    conn.commit()
+                except Exception:
+                    pass
+    except Exception as e:
+        print(f"Warning ensuring RAG columns: {e}")
+
+ensure_rag_columns(engine)
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
@@ -81,4 +122,5 @@ def get_db():
         yield db
     finally:
         db.close()
+
 

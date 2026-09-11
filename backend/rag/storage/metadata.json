@@ -16,6 +16,54 @@
     }
   },
   {
+    "chunk_id": "doc_f56fc2db652b_chunk_0",
+    "document_id": "doc_f56fc2db652b",
+    "content": "# Computer Networks & Systems Architecture\n\n## Topic: TCP/IP & Transport Layer Protocols\n- **Domain**: computer_networks\n- **Topic**: transport_protocols\n- **Difficulty**: medium\n\n### TCP vs UDP\n- **TCP (Transmission Control Protocol)**: Connection-oriented, reliable protocol providing ordering guarantees, error detection, flow control (sliding window algorithm), and congestion control. Uses a 3-way handshake (`SYN`, `SYN-ACK`, `ACK`) to establish connections and 4-way handshake to terminate.\n- **UDP (User Datagram Protocol)**: Connectionless, lightweight protocol without delivery or ordering guarantees. Ideal for real-time video streaming, gaming, and VoIP where low latency is critical.\n\n---",
+    "metadata": {
+      "domain": "computer_networks",
+      "topic": "transport_protocols",
+      "subtopic": null,
+      "difficulty": "medium",
+      "source": "cn_notes.md",
+      "document_id": "doc_f56fc2db652b",
+      "chunk_id": "doc_f56fc2db652b_chunk_0",
+      "chunk_index": 0,
+      "total_chunks": 3
+    }
+  },
+  {
+    "chunk_id": "doc_f56fc2db652b_chunk_1",
+    "document_id": "doc_f56fc2db652b",
+    "content": "---\n\n## Topic: HTTP, HTTPS & TLS Handshake\n- **Domain**: computer_networks\n- **Topic**: application_layer_http\n- **Difficulty**: hard\n\n### HTTP Evolution\n- **HTTP/1.1**: Introduces persistent connections (`Keep-Alive`), but suffers from Head-of-Line (HoL) blocking.\n- **HTTP/2**: Introduces binary framing, multiplexing over a single TCP connection, header compression (HPACK), and server push.\n- **HTTP/3**: Uses QUIC protocol over UDP to eliminate TCP Head-of-Line blocking and accelerate connection setup.\n\n### TLS 1.3 Encryption\n- Secures HTTP traffic via asymmetric encryption (RSA / Elliptic Curve Diffie-Hellman) during handshake to exchange session keys, followed by symmetric AES-GCM encryption for bulk data transfer.\n\n---",
+    "metadata": {
+      "domain": "computer_networks",
+      "topic": "transport_protocols",
+      "subtopic": null,
+      "difficulty": "medium",
+      "source": "cn_notes.md",
+      "document_id": "doc_f56fc2db652b",
+      "chunk_id": "doc_f56fc2db652b_chunk_1",
+      "chunk_index": 1,
+      "total_chunks": 3
+    }
+  },
+  {
+    "chunk_id": "doc_f56fc2db652b_chunk_2",
+    "document_id": "doc_f56fc2db652b",
+    "content": "---\n\n## Topic: DNS & Routing Architecture\n- **Domain**: computer_networks\n- **Topic**: dns_and_routing\n- **Difficulty**: medium\n\n### Domain Name System (DNS) Resolution\n1. Client checks local DNS cache / OS resolver.\n2. Query sent to Recursive Resolver (ISP or 8.8.8.8).\n3. Root Name Server (`.`) returns Top-Level Domain (TLD) server address (`.com`).\n4. TLD Server returns Authoritative Name Server address.\n5. Authoritative Server returns target IP address (A / AAAA record).",
+    "metadata": {
+      "domain": "computer_networks",
+      "topic": "transport_protocols",
+      "subtopic": null,
+      "difficulty": "medium",
+      "source": "cn_notes.md",
+      "document_id": "doc_f56fc2db652b",
+      "chunk_id": "doc_f56fc2db652b_chunk_2",
+      "chunk_index": 2,
+      "total_chunks": 3
+    }
+  },
+  {
     "chunk_id": "doc_5e278ac55090_chunk_0",
     "document_id": "doc_5e278ac55090",
     "content": "# Database Management Systems (DBMS) Knowledge Base\n\n## Topic: Database Normalization\n- **Domain**: dbms\n- **Topic**: normalization\n- **Difficulty**: medium\n\n### Concepts\nNormalization is the process of organizing data in a relational database to minimize data redundancy and prevent data modification anomalies (insertion, update, and deletion anomalies).",
@@ -269,6 +317,102 @@
       "chunk_id": "doc_a947c0df6ed9_chunk_1",
       "chunk_index": 1,
       "total_chunks": 2
+    }
+  },
+  {
+    "chunk_id": "doc_6c2605f959c8_chunk_0",
+    "document_id": "doc_6c2605f959c8",
+    "content": "# React & Frontend Architecture\n\n## Topic: Virtual DOM & React Fiber Reconciliation\n- **Domain**: react\n- **Topic**: virtual_dom_fiber\n- **Difficulty**: medium\n\n### Virtual DOM Architecture\n- React creates a lightweight in-memory snapshot of the UI DOM tree.\n- When state or props change, a new Virtual DOM tree is constructed.\n- React compares the new Virtual DOM with the previous Virtual DOM using a heuristic $O(n)$ diffing algorithm.\n\n### React Fiber Architecture\n- Introduced in React 16 to break rendering work into incremental units of work.\n- Allows React to pause, resume, or abort rendering priority for high-priority user input and animations.\n\n---\n\n## Topic: React Hooks & State Management\n- **Domain**: react\n- **Topic**: hooks_and_state\n- **Difficulty**: hard",
+    "metadata": {
+      "domain": "react",
+      "topic": "virtual_dom_fiber",
+      "subtopic": null,
+      "difficulty": "medium",
+      "source": "react_notes.md",
+      "document_id": "doc_6c2605f959c8",
+      "chunk_id": "doc_6c2605f959c8_chunk_0",
+      "chunk_index": 0,
+      "total_chunks": 2
+    }
+  },
+  {
+    "chunk_id": "doc_6c2605f959c8_chunk_1",
+    "document_id": "doc_6c2605f959c8",
+    "content": "---\n\n## Topic: React Hooks & State Management\n- **Domain**: react\n- **Topic**: hooks_and_state\n- **Difficulty**: hard\n\n### Core Hooks Rules\n- Call hooks only at the top level of React functions (never inside loops, conditions, or nested functions).\n- Call hooks only from React function components or custom hooks.\n\n### Performance Optimization Hooks\n- **`useMemo`**: Caches calculated values across renders to avoid expensive re-computations.\n- **`useCallback`**: Caches callback function references across renders to prevent unnecessary re-renders of child components wrapped in `React.memo`.\n\n```javascript\nconst memoizedValue = useMemo(() => computeExpensiveValue(a, b), [a, b]);\nconst memoizedCallback = useCallback(() => { doSomething(a, b); }, [a, b]);\n```",
+    "metadata": {
+      "domain": "react",
+      "topic": "virtual_dom_fiber",
+      "subtopic": null,
+      "difficulty": "medium",
+      "source": "react_notes.md",
+      "document_id": "doc_6c2605f959c8",
+      "chunk_id": "doc_6c2605f959c8_chunk_1",
+      "chunk_index": 1,
+      "total_chunks": 2
+    }
+  },
+  {
+    "chunk_id": "doc_46ce5788d02b_chunk_0",
+    "document_id": "doc_46ce5788d02b",
+    "content": "# SQL & Relational Database Engineering\n\n## Topic: Joins & Set Operations\n- **Domain**: sql\n- **Topic**: joins_and_sets\n- **Difficulty**: medium\n\n### SQL Join Types\n- **INNER JOIN**: Returns records that have matching values in both tables.\n- **LEFT (OUTER) JOIN**: Returns all records from the left table, and the matched records from the right table. Missing values on the right are NULL.\n- **RIGHT (OUTER) JOIN**: Returns all records from the right table, and matched records from the left.\n- **FULL (OUTER) JOIN**: Returns all records when there is a match in either left or right table.\n- **CROSS JOIN**: Produces the Cartesian product of rows from both tables.",
+    "metadata": {
+      "domain": "sql",
+      "topic": "joins_and_sets",
+      "subtopic": null,
+      "difficulty": "medium",
+      "source": "sql_notes.md",
+      "document_id": "doc_46ce5788d02b",
+      "chunk_id": "doc_46ce5788d02b_chunk_0",
+      "chunk_index": 0,
+      "total_chunks": 4
+    }
+  },
+  {
+    "chunk_id": "doc_46ce5788d02b_chunk_1",
+    "document_id": "doc_46ce5788d02b",
+    "content": "```sql\nSELECT e.employee_id, e.name, d.department_name\nFROM employees e\nINNER JOIN departments d ON e.department_id = d.department_id;\n```\n\n---\n\n## Topic: Indexing & Query Optimization\n- **Domain**: sql\n- **Topic**: indexing_optimization\n- **Difficulty**: hard\n\n### B-Tree & Hash Indexes\n- **B-Tree Indexes**: Default index structure supporting equality, range queries (`<`, `<=`, `>`, `>=`, `BETWEEN`), and prefix searches (`LIKE 'abc%'`).\n- **Hash Indexes**: O(1) lookup speed for exact equality matches (`=`), but do not support range scans or sorting.",
+    "metadata": {
+      "domain": "sql",
+      "topic": "joins_and_sets",
+      "subtopic": null,
+      "difficulty": "medium",
+      "source": "sql_notes.md",
+      "document_id": "doc_46ce5788d02b",
+      "chunk_id": "doc_46ce5788d02b_chunk_1",
+      "chunk_index": 1,
+      "total_chunks": 4
+    }
+  },
+  {
+    "chunk_id": "doc_46ce5788d02b_chunk_2",
+    "document_id": "doc_46ce5788d02b",
+    "content": "### Optimization Techniques\n- Analyze query execution plans using `EXPLAIN ANALYZE`.\n- Avoid selecting unnecessary columns with `SELECT *`; specify needed attributes explicitly.\n- Use covering indexes where all required query columns exist inside the index tree.\n- Be cautious of function calls on indexed columns (e.g. `WHERE LOWER(email) = ...`) which can invalidate index usage unless functional indexes are defined.\n\n---\n\n## Topic: Window Functions & Aggregations\n- **Domain**: sql\n- **Topic**: window_functions\n- **Difficulty**: hard",
+    "metadata": {
+      "domain": "sql",
+      "topic": "joins_and_sets",
+      "subtopic": null,
+      "difficulty": "medium",
+      "source": "sql_notes.md",
+      "document_id": "doc_46ce5788d02b",
+      "chunk_id": "doc_46ce5788d02b_chunk_2",
+      "chunk_index": 2,
+      "total_chunks": 4
+    }
+  },
+  {
+    "chunk_id": "doc_46ce5788d02b_chunk_3",
+    "document_id": "doc_46ce5788d02b",
+    "content": "---\n\n## Topic: Window Functions & Aggregations\n- **Domain**: sql\n- **Topic**: window_functions\n- **Difficulty**: hard\n\n### Common Window Functions\n- `ROW_NUMBER()`: Assigns a unique sequential integer to each row within a partition.\n- `RANK()`: Assigns rank with gaps for ties.\n- `DENSE_RANK()`: Assigns rank without gaps for ties.\n- `LAG(col, offset)` & `LEAD(col, offset)`: Accesses data from previous or subsequent rows without requiring self-joins.\n\n```sql\nSELECT \n employee_id,\n department_id,\n salary,\n DENSE_RANK() OVER (PARTITION BY department_id ORDER BY salary DESC) as salary_rank\nFROM employees;\n```",
+    "metadata": {
+      "domain": "sql",
+      "topic": "joins_and_sets",
+      "subtopic": null,
+      "difficulty": "medium",
+      "source": "sql_notes.md",
+      "document_id": "doc_46ce5788d02b",
+      "chunk_id": "doc_46ce5788d02b_chunk_3",
+      "chunk_index": 3,
+      "total_chunks": 4
     }
   },
   {

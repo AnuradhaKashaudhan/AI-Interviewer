@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { TrendingUp, TrendingDown, CheckCircle2, ChevronRight, Download, RefreshCw, AlertCircle, Sparkles } from 'lucide-react';
+import { RefreshCw, TrendingUp, TrendingDown, Sparkles, Download, AlertCircle, CheckCircle2, ChevronRight, Check } from 'lucide-react';
+import { useATS } from '../../context/ATSContext.jsx';
 
 const SubScoreBar = ({ label, score, previousScore }) => {
   const diff = score - (previousScore ?? score);
@@ -40,10 +41,27 @@ const FixItScorecard = ({
     subScores, 
     issues, 
     totalInitialIssues, 
-    isReanalyzing 
+    isReanalyzing,
+    activeIssueId,
+    onSelectIssue,
+    onApplyFix
 }) => {
+  const { resumeText } = useATS();
   const issuesFixed = totalInitialIssues - issues.length;
   const isPerfect = issues.length === 0;
+
+  const handleExport = () => {
+    const cleanText = (resumeText || "").replace(/\s*\((add specific numbers|reduced load time by 40%|add numbers|add specific numbers[^\)]*)\)/gi, '');
+    const blob = new Blob([cleanText], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'Optimized_Resume.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="bg-white rounded-[28px] border border-stone-200 shadow-sm flex flex-col h-[calc(100vh-8rem)] sticky top-24">
@@ -100,8 +118,11 @@ const FixItScorecard = ({
                 </div>
                 <h3 className="text-lg font-bold text-emerald-900 mb-2">All flagged issues resolved!</h3>
                 <p className="text-sm text-emerald-700 mb-6">Great job. Your resume is now highly optimized for ATS parsers.</p>
-                <button className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-full font-bold transition-colors shadow-lg shadow-emerald-600/20">
-                    <Download className="w-4 h-4" /> Export as PDF
+                <button 
+                    onClick={handleExport}
+                    className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-full font-bold transition-colors shadow-lg shadow-emerald-600/20"
+                >
+                    <Download className="w-4 h-4" /> Export Resume
                 </button>
             </motion.div>
         ) : (
@@ -121,31 +142,53 @@ const FixItScorecard = ({
 
                 <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Remaining Issues ({issues.length})</div>
                 
-                <div className="space-y-2 flex-1 overflow-y-auto pr-2 no-scrollbar">
+                <div className="space-y-2.5 flex-1 overflow-y-auto pr-2 no-scrollbar">
                     <AnimatePresence>
-                        {issues.slice(0, 8).map(issue => (
-                            <motion.div 
-                                key={issue.id}
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -20, height: 0, margin: 0 }}
-                                className="bg-white p-3 rounded-xl border border-stone-200 shadow-sm flex items-start gap-3 group cursor-pointer hover:border-stone-300 transition-colors"
-                            >
-                                {issue.severity === 'error' ? <AlertCircle className="w-4 h-4 text-rose-500 mt-0.5 flex-shrink-0" /> : 
-                                 issue.severity === 'warning' ? <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" /> :
-                                 <CheckCircle2 className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />}
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-[13px] font-bold text-slate-800 truncate">{issue.title || issue.message}</p>
-                                    <p className="text-[11px] text-slate-600 line-clamp-2 mt-0.5">{issue.evidence || issue.suggestion || issue.message}</p>
-                                    <span className="inline-block text-[10px] text-indigo-600 bg-indigo-50 font-semibold px-2 py-0.5 rounded mt-1">{issue.section || 'General'}</span>
-                                </div>
-                                <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500 opacity-0 group-hover:opacity-100 transition-all transform translate-x-[-5px] group-hover:translate-x-0" />
-                            </motion.div>
-                        ))}
+                        {issues.slice(0, 10).map(issue => {
+                            const isActive = activeIssueId === issue.id;
+                            return (
+                                <motion.div 
+                                    key={issue.id}
+                                    initial={{ opacity: 0, x: 20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: -20, height: 0, margin: 0 }}
+                                    onClick={() => onSelectIssue && onSelectIssue(isActive ? null : issue.id)}
+                                    className={`bg-white p-3.5 rounded-2xl border transition-all cursor-pointer ${
+                                      isActive ? 'border-[#16324f] ring-2 ring-[#16324f]/15 bg-stone-50/80 shadow-md' : 'border-stone-200 hover:border-stone-300 shadow-sm'
+                                    }`}
+                                >
+                                    <div className="flex items-start gap-3">
+                                      {issue.severity === 'error' ? <AlertCircle className="w-4 h-4 text-rose-500 mt-0.5 flex-shrink-0" /> : 
+                                       issue.severity === 'warning' ? <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" /> :
+                                       <CheckCircle2 className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />}
+                                      <div className="flex-1 min-w-0">
+                                          <p className="text-[13px] font-bold text-slate-900 leading-tight">{issue.title || issue.message}</p>
+                                          <p className="text-[11px] text-slate-600 line-clamp-2 mt-1">{issue.evidence || issue.suggestion || issue.message}</p>
+                                          
+                                          <div className="mt-2.5 pt-2 border-t border-stone-100 flex items-center justify-between gap-2">
+                                            <span className="inline-block text-[10px] text-indigo-700 bg-indigo-50 font-semibold px-2 py-0.5 rounded">
+                                              {issue.section || 'General'}
+                                            </span>
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (onApplyFix) onApplyFix(issue);
+                                              }}
+                                              className="inline-flex items-center gap-1 px-3 py-1 bg-[#16324f] hover:bg-[#0f2438] text-white text-[11px] font-bold rounded-full transition shadow-sm flex-shrink-0"
+                                            >
+                                              <Check className="w-3 h-3" /> Apply Fix
+                                            </button>
+                                          </div>
+                                      </div>
+                                    </div>
+                                </motion.div>
+                            );
+                        })}
                     </AnimatePresence>
-                    {issues.length > 8 && (
+                    {issues.length > 10 && (
                         <div className="text-center py-2 text-xs text-slate-400 font-medium">
-                            + {issues.length - 8} more issues
+                            + {issues.length - 10} more issues
                         </div>
                     )}
                 </div>

@@ -64,6 +64,13 @@ class Question(Base):
     difficulty = Column(String, nullable=True)
     category = Column(String, nullable=True) # behavioral, technical, coding
     order = Column(Integer, nullable=False)
+    
+    # RAG Grounding & Traceability Metadata
+    topic = Column(String, nullable=True)
+    evidence_ids = Column(JSON, nullable=True)
+    retrieval_scores = Column(JSON, nullable=True)
+    grounding_score = Column(Float, nullable=True)
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     session = relationship("InterviewSession", back_populates="questions")
@@ -105,6 +112,19 @@ class Evaluation(Base):
     # Adaptive
     next_question_suggestion = Column(Text, nullable=True)
     answer_quality = Column(String, nullable=True) # weak, average, strong
+
+    # RAG Grounding & Traceability Metadata
+    evidence_ids = Column(JSON, nullable=True)
+    retrieval_scores = Column(JSON, nullable=True)
+    semantic_similarity = Column(Float, nullable=True)
+    missing_concepts = Column(JSON, nullable=True)
+    technical_errors = Column(JSON, nullable=True)
+
+    # Part 4 Advanced ML Scoring Signals
+    evidence_coverage = Column(Float, nullable=True)
+    qa_relevance = Column(Float, nullable=True)
+    evaluation_confidence = Column(Float, nullable=True)
+    scoring_version = Column(String, nullable=True, default="v2.0-ml-rag")
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     

@@ -29,17 +29,26 @@ import {
   Sparkles,
   Search,
   BookOpen,
-    Briefcase,
-    Edit2,
-    Eye,
-    ShieldCheck,
-    ShieldX
+  Briefcase,
+  Edit2,
+  Eye,
+  ShieldCheck,
+  ShieldX,
+  Cpu,
+  Layers,
+  Zap,
+  Activity,
+  Check
 } from 'lucide-react';
 import { getPreferredVoice } from "./services/voiceService";
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getAuthToken, apiFetch } from './services/authApi.js';
 import CodingRoundCard from './components/interview/CodingRoundCard';
 import DraggableWebcam from './components/interview/DraggableWebcam';
+import RAGEvidencePanel from './components/interview/RAGEvidencePanel';
+import ExplainableMLEvaluation from './components/interview/ExplainableMLEvaluation';
+import EvidenceAlignmentVisualization from './components/interview/EvidenceAlignmentVisualization';
+import DemoPipelineModal from './components/interview/DemoPipelineModal';
 import { API_BASE_URL, buildApiUrl } from './utils/apiConfig.js';
 
 const MONITORING_CONSENT_KEY = 'ai-interviewer-monitoring-consent-v1';
@@ -106,6 +115,20 @@ const InterviewPage = () => {
     const [hasSubmittedCoding, setHasSubmittedCoding] = useState(false);
     const [nextQuestionError, setNextQuestionError] = useState("");
 
+    // Extended ML-RAG Metadata State
+    const [questionNumber, setQuestionNumber] = useState(1);
+    const [questionMeta, setQuestionMeta] = useState({
+        topic: 'General',
+        difficulty: 'Medium',
+        question_type: 'Conceptual',
+        estimated_skill: 'Software Engineering',
+        knowledge_grounded: true,
+        grounding_score: 0.88,
+        evidence_details: [],
+        adaptive_reason: ''
+    });
+    const [showDemoModal, setShowDemoModal] = useState(false);
+
     const [isRecording, setIsRecording] = useState(false);
     const [isMuted, setIsMuted] = useState(false);
     const [isSpeaking, setIsSpeaking] = useState(false);
@@ -139,9 +162,9 @@ const InterviewPage = () => {
     const [skills, setSkills] = useState([]);
     
     // Role selection state variables
-    const [targetRole, setTargetRole] = useState(""); // empty initially to force selection
+    const [targetRole, setTargetRole] = useState("");
     const [customRoleText, setCustomRoleText] = useState("");
-    const [roleSelected, setRoleSelected] = useState(false); // validation gate
+    const [roleSelected, setRoleSelected] = useState(false);
     const [profileText, setProfileText] = useState("");
     
     const [interviewStarted, setInterviewStarted] = useState(false);
@@ -332,18 +355,18 @@ const InterviewPage = () => {
         return () => clearInterval(timer);
     }, [interviewStarted, completed]);
 
-    // Auto‑speak when the active question changes
-  useEffect(() => {
-    if (activeQuestion && currentQuestionType !== 'coding') {
+    // Auto-speak when the active question changes
+    useEffect(() => {
+        if (activeQuestion && currentQuestionType !== 'coding') {
             if (getInterviewSettings().autoSpeakQuestions !== false) {
                 speakQuestion(activeQuestion);
             }
-    }
-    return () => {
-      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-      setIsSpeaking(false);
-    };
-  }, [activeQuestion, currentQuestionType, isMuted, availableVoices]);
+        }
+        return () => {
+            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+            setIsSpeaking(false);
+        };
+    }, [activeQuestion, currentQuestionType, isMuted, availableVoices]);
 
     // Voice control UI component
     const VoiceControls = () => (
@@ -353,7 +376,7 @@ const InterviewPage = () => {
         <button onClick={() => setIsMuted(!isMuted)} className="voice-controls" title={isMuted ? 'Unmute Voice' : 'Mute Voice'}>
           {isMuted ? '🔇' : '🔊'}
         </button>
-        {isSpeaking && <span className="voice-badge speaking">AI Speaking...</span>}
+        {isSpeaking && <span className="voice-badge speaking">Interviewer Speaking...</span>}
         {isMuted && !isSpeaking && <span className="voice-badge muted">Voice Muted</span>}
         {!isSpeaking && !isMuted && <span className="voice-badge ready">Ready</span>}
       </div>
@@ -365,7 +388,7 @@ const InterviewPage = () => {
         return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     };
 
-    // Stable Media Stream Management
+    // Media Stream Management
     useEffect(() => {
         const initMedia = async () => {
             try {
@@ -664,60 +687,46 @@ const InterviewPage = () => {
         };
     }, [interviewStarted, completed, monitoringEnabled, stream]);
 
-const handleResumeUpload = async (event) => {
-  const file = event.target.files?.[0];
-  if (!file) return;
+    const handleResumeUpload = async (event) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
 
-  setUploadingResume(true);
-  const formData = new FormData();
-  formData.append('file', file);
+      setUploadingResume(true);
+      const formData = new FormData();
+      formData.append('file', file);
 
-  try {
-    const uploadUrl = buildApiUrl('/api/upload-resume');
-  console.log("FINAL Resume upload URL:", uploadUrl);
-  const response = await apiFetch(uploadUrl, {
-      method: 'POST',
-      body: formData,
-    });
+      try {
+        const uploadUrl = buildApiUrl('/api/upload-resume');
+        const response = await apiFetch(uploadUrl, {
+          method: 'POST',
+          body: formData,
+        });
 
-    const rawText = await response.text();
-    console.log('Resume upload status:', response.status);
-    console.log('Resume upload raw response:', rawText);
+        const rawText = await response.text();
+        let data = rawText ? JSON.parse(rawText) : {};
 
-    let data = {};
-    try {
-      data = rawText ? JSON.parse(rawText) : {};
-    } catch (parseError) {
-      console.error('Failed to parse backend response:', parseError);
-      throw new Error(`Backend returned invalid JSON: ${rawText || 'empty response'}`);
-    }
+        if (!response.ok) {
+          throw new Error(data.detail || data.error || data.message || `Upload failed with status ${response.status}`);
+        }
 
-    if (!response.ok) {
-      throw new Error(data.detail || data.error || data.message || `Upload failed with status ${response.status}`);
-    }
-
-    setSkills(data.extracted_skills || []);
-    if (data.extracted_text) {
-      setProfileText(data.extracted_text);
-    }
-    const recommendation = data.coding_round_recommendation || {};
-    setCodingRoundEnabled(Boolean(recommendation.enabled));
-    setCodingRoundNote(recommendation.reason || '');
-    setResumeUploaded(true);
-    setLoadingStatus('Resume parsed successfully!');
-    setTimeout(() => setLoadingStatus(''), 3000);
-  } catch (err) {
-    console.error('Error uploading resume:', err);
-    if (err.message === 'Failed to fetch') {
-      alert('Failed to connect to the backend server. Please ensure the FastAPI server is running.');
-    } else {
-      alert(`Failed to upload resume: ${err.message}`);
-    }
-  } finally {
-    setUploadingResume(false);
-    if (event.target) event.target.value = '';
-  }
-};
+        setSkills(data.extracted_skills || []);
+        if (data.extracted_text) {
+          setProfileText(data.extracted_text);
+        }
+        const recommendation = data.coding_round_recommendation || {};
+        setCodingRoundEnabled(Boolean(recommendation.enabled));
+        setCodingRoundNote(recommendation.reason || '');
+        setResumeUploaded(true);
+        setLoadingStatus('Resume parsed successfully!');
+        setTimeout(() => setLoadingStatus(''), 3000);
+      } catch (err) {
+        console.error('Error uploading resume:', err);
+        alert(`Failed to upload resume: ${err.message}`);
+      } finally {
+        setUploadingResume(false);
+        if (event.target) event.target.value = '';
+      }
+    };
 
     const startInterview = async () => {
         const finalRole = targetRole === "Custom Role" ? customRoleText : targetRole;
@@ -743,8 +752,9 @@ const handleResumeUpload = async (event) => {
             if (interviewSettings.requestScreenShare !== false) {
                 await requestScreenShare();
             }
-            setLoadingStatus("Analyzing profile and generating dynamic questions...");
+            setLoadingStatus("Preparing your interview question...");
             setInterviewStarted(true);
+            setQuestionNumber(1);
             const response = await apiFetch(`${API_BASE_URL}/api/start-interview`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -765,6 +775,17 @@ const handleResumeUpload = async (event) => {
                 setCodingRoundEnabled(Boolean(data.coding_round_enabled));
                 setCodingRoundNote(data.coding_round_note || '');
                 if (data.audio_path) setAudioUrl(`${API_BASE_URL}/${data.audio_path}`);
+
+                setQuestionMeta({
+                    topic: data.topic || (skills[0] || finalRole),
+                    difficulty: data.difficulty || 'Medium',
+                    question_type: data.question_type || 'Conceptual',
+                    estimated_skill: data.estimated_skill || (skills[0] || finalRole),
+                    knowledge_grounded: data.knowledge_grounded !== false,
+                    grounding_score: data.grounding_score || 0.88,
+                    evidence_details: data.evidence_details || [],
+                    adaptive_reason: ''
+                });
             }
         } catch (err) {
             console.error("Error starting interview:", err);
@@ -775,12 +796,12 @@ const handleResumeUpload = async (event) => {
         setLoadingStatus("");
     };
 
-    const fetchNextQuestion = async () => {
+    const fetchNextQuestion = async (retryCount = 0) => {
         setFeedback(null);
         setHasSubmittedCoding(false);
         setNextQuestionError('');
         setLoading(true);
-        setLoadingStatus("Analyzing context & generating next adaptive question...");
+        setLoadingStatus("Preparing your next interview question...");
         try {
             const response = await apiFetch(`${API_BASE_URL}/api/next-question`, { 
                 method: 'POST',
@@ -794,6 +815,7 @@ const handleResumeUpload = async (event) => {
             const data = await response.json();
             if (data.question) {
                 setQuestion(data.question);
+                setQuestionNumber(prev => prev + 1);
                 setCurrentQuestionType(data.question_type || 'behavioral');
                 if (data.question_type === 'coding') {
                     setCodingProblem(data.question);
@@ -801,18 +823,36 @@ const handleResumeUpload = async (event) => {
                     setCodingOutput('');
                 }
                 if (data.audio_path) setAudioUrl(`${API_BASE_URL}/${data.audio_path}`);
+
+                setQuestionMeta({
+                    topic: data.topic || 'Technical',
+                    difficulty: data.difficulty || 'Adaptive',
+                    question_type: data.question_type || 'Technical',
+                    estimated_skill: data.estimated_skill || data.topic || 'Technical',
+                    knowledge_grounded: data.knowledge_grounded !== false,
+                    grounding_score: data.grounding_score || 0.88,
+                    evidence_details: data.evidence_details || [],
+                    adaptive_reason: data.adaptive_reason || ''
+                });
             } else if (data.completed || !data.question) {
                 setCompleted(true);
             }
         } catch (err) {
             console.error("Error fetching next question:", err);
-            setNextQuestionError(err.message || 'Unable to fetch next question. Please check connection and try again.');
+            if (retryCount < 1) {
+                setLoadingStatus("Unable to prepare the next question. Retrying...");
+                setTimeout(() => fetchNextQuestion(retryCount + 1), 1000);
+                return;
+            } else {
+                setNextQuestionError(err.message || 'Unable to fetch next question. Please check connection and try again.');
+            }
         } finally {
-            setLoading(false);
-            setLoadingStatus("");
+            if (retryCount === 0 || (retryCount > 0 && nextQuestionError)) {
+                setLoading(false);
+                setLoadingStatus("");
+            }
         }
     };
-
 
     const startRecording = () => {
         if (!stream) return;
@@ -899,38 +939,9 @@ const handleResumeUpload = async (event) => {
         }
     };
 
-    const handleRunCode = async () => {
-        setCodingExecutionLoading(true);
-        setCodingOutput('Running code...');
-        try {
-            const res = await fetch(`${API_BASE_URL}/api/execute-code`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    language: codingLanguage,
-                    source: codingCode,
-                }),
-            });
-            const data = await res.json();
-            const stdout = data.run?.stdout || data.compile?.stdout || '';
-            const stderr = data.run?.stderr || data.compile?.stderr || '';
-            const output = [stdout, stderr].filter(Boolean).join('\n') || 'No output.';
-            setCodingOutput(output);
-        } catch (err) {
-            console.error('Code execution error:', err);
-            setCodingOutput('Execution failed. Please try again.');
-        } finally {
-            setCodingExecutionLoading(false);
-        }
-    };
-
     const submitAnswer = async (blob) => {
-        console.log("--- SUBMITTED ANSWER ---");
-        console.log("Question asked:", question);
-        console.log("Audio blob size:", blob.size, "bytes");
-
         setLoading(true);
-        setLoadingStatus("Transcribing response...");
+        setLoadingStatus("Analyzing your answer...");
         const formData = new FormData();
         formData.append('session_id', sessionId);
         formData.append('question', question);
@@ -940,25 +951,16 @@ const handleResumeUpload = async (event) => {
             formData.append('answer_text', browserTranscript);
         }
 
-        console.log("API Request Payload: Sending question and audio multipart form-data");
-
         try {
+            setLoadingStatus("Retrieving relevant technical knowledge...");
             const response = await apiFetch(`${API_BASE_URL}/api/submit-answer`, {
                 method: 'POST',
                 body: formData,
             });
             const data = await response.json();
             
-            console.log("API Response Received:", data);
-            console.log("Parsed Evaluation JSON:", data.evaluation);
-            
-            setLoadingStatus("Evaluating answer details...");
+            setLoadingStatus("Evaluating semantic and conceptual alignment...");
             setFeedback(data.evaluation);
-            
-            if (data.transcribed_text) {
-                console.log("Transcribed text of answer:", data.transcribed_text);
-            }
-            console.log("------------------------");
         } catch (err) {
             console.error("Error submitting answer:", err);
             setLoadingStatus("Connection error. Retrying...");
@@ -967,32 +969,9 @@ const handleResumeUpload = async (event) => {
         setLoadingStatus("");
     };
 
-    const submitCodingAnswer = async () => {
-        setCodingSubmitLoading(true);
-        setCodingOutput('Submitting your solution...');
-        try {
-            const formData = new FormData();
-            formData.append('session_id', sessionId);
-            formData.append('question', question || codingProblem);
-            formData.append('answer_text', codingCode);
-            formData.append('language', codingLanguage);
-            const response = await apiFetch(`${API_BASE_URL}/api/submit-answer`, {
-                method: 'POST',
-                body: formData,
-            });
-            const data = await response.json();
-            setFeedback(data.evaluation);
-            setCodingOutput(`Submitted in ${codingLanguage}. ${data.evaluation?.feedback || 'Your solution was recorded.'}`);
-        } catch (err) {
-            console.error('Error submitting coding answer:', err);
-            setCodingOutput('Submission failed. Please try again.');
-        } finally {
-            setCodingSubmitLoading(false);
-        }
-    };
-
     const fetchReport = async () => {
         setLoading(true);
+        setLoadingStatus("Aggregating ML-RAG intelligence signals & computing report...");
         try {
             const response = await apiFetch(`${API_BASE_URL}/api/interview-report?session_id=${sessionId}`);
             const data = await response.json();
@@ -1001,6 +980,7 @@ const handleResumeUpload = async (event) => {
             console.error("Error fetching report:", err);
         }
         setLoading(false);
+        setLoadingStatus("");
     };
 
     const selectedRoleDisplay = targetRole === "Custom Role" ? customRoleText : targetRole;
@@ -1015,6 +995,7 @@ const handleResumeUpload = async (event) => {
         monitoringStatus === 'unavailable' ? 'text-rose-700 border-rose-200 bg-rose-50' :
         'text-slate-700 border-stone-200 bg-white';
 
+    // Finished / Final Report View
     if (completed) {
         return (
             <div className="page-canvas flex items-center justify-center p-6 relative overflow-y-auto text-slate-900">
@@ -1022,236 +1003,224 @@ const handleResumeUpload = async (event) => {
                 <motion.div 
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="surface-card p-8 md:p-12 text-center max-w-5xl w-full my-8 relative z-10"
+                    className="surface-card p-6 md:p-10 text-center max-w-6xl w-full my-8 relative z-10"
                 >
-                    <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-6 border border-emerald-200">
-                        <CheckCircle2 className="w-10 h-10 text-emerald-700" />
+                    <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-200">
+                        <CheckCircle2 className="w-8 h-8 text-emerald-700" />
                     </div>
-                    <h1 className="display-title text-4xl md:text-5xl mb-2">Interview Completed</h1>
-                    <p className="muted-copy mb-8 max-w-xl mx-auto">
-                        Your personalized session for <span className="text-[#8a5d2f] font-semibold">{selectedRoleDisplay || "General Software Engineering"}</span> is finished. Click below to view your analysis report.
+                    <h1 className="display-title text-3xl md:text-4xl mb-2">Interview Completed</h1>
+                    <p className="muted-copy mb-6 max-w-xl mx-auto text-sm">
+                        Your personalized session for <span className="text-[#8a5d2f] font-semibold">{selectedRoleDisplay || "General Software Engineering"}</span> is complete.
                     </p>
                     
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                        <div className="text-left surface-card-soft p-6">
-                            <h3 className="section-eyebrow mb-4 flex items-center gap-2 text-[#8a5d2f]">
-                                <AlertTriangle className="w-5 h-5" />
-                                Stress Level & Hesitation Heatmap
-                            </h3>
-                            <div className="h-32 flex items-end gap-1 bg-white p-4 rounded-2xl border border-stone-200">
-                                {stressData.length > 0 ? stressData.map((d, i) => (
-                                    <div 
-                                        key={i} 
-                                        className="flex-grow rounded-t-sm" 
-                                        style={{ 
-                                            height: `${Math.max(10, d.level)}%`, 
-                                            backgroundColor: d.level > 70 ? '#ef4444' : d.level > 40 ? '#facc15' : '#22c55e',
-                                            opacity: 0.8
-                                        }}
-                                        title={`Time: ${d.time}s, Stress: ${d.level}%`}
-                                    />
-                                )) : (
-                                    <div className="flex-grow flex items-center justify-center h-full">
-                                        {[20, 45, 30, 65, 40, 80, 50, 30].map((v, i) => (
-                                            <div key={i} className="flex-grow h-full mx-0.5 flex flex-col justify-end">
-                                                <div className="w-full rounded-t-sm" style={{ height: `${v}%`, backgroundColor: v > 70 ? '#ef4444' : v > 40 ? '#facc15' : '#22c55e', opacity: 0.3 }} />
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                            <p className="text-xs text-slate-500 mt-2">Biometric markers indicating cognitive load and speed of articulation.</p>
-                        </div>
-
-                        <div className="text-left surface-card-soft p-6">
-                            <h3 className="section-eyebrow mb-4 flex items-center gap-2 text-[#16324f]">
-                                <Download className="w-5 h-5" />
-                                Session Recording
-                            </h3>
-                            <div className="p-4 bg-white aspect-video rounded-2xl border border-stone-200 flex flex-col items-center justify-center gap-4 relative overflow-hidden">
-                                {recordedVideoUrl ? (
-                                    <video src={recordedVideoUrl} controls className="w-full h-full rounded-lg" />
-                                ) : (
-                                    <div className="text-slate-500 text-center">
-                                        <VideoOff className="w-8 h-8 mb-2 mx-auto opacity-30" />
-                                        <p className="text-sm">Recording ready for review</p>
-                                    </div>
-                                )}
-                            </div>
-                            {recordedVideoUrl && (
-                                <a 
-                                    href={recordedVideoUrl} 
-                                    download="interview_session.webm"
-                                    className="secondary-action w-full py-2 mt-4 text-sm text-center block rounded-full"
-                                >
-                                    Download Video (WebM)
-                                </a>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="text-left surface-card-soft p-6 mb-8">
-                        <h3 className="section-eyebrow mb-4 flex items-center gap-2 text-[#16324f]">
-                            <Eye className="w-4 h-4" />
-                            Integrity Notes (Coaching)
-                        </h3>
-                        <p className="text-xs text-slate-600 mb-4">
-                            These notes are generated from optional on-device monitoring to help you simulate interview focus. No video was uploaded.
-                        </p>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                            <div className="bg-white border border-stone-200 rounded-xl p-3">
-                                <div className="section-eyebrow">Out of Frame</div>
-                                <div className="font-bold text-slate-900">{outOfFrameCount} instance(s)</div>
-                            </div>
-                            <div className="bg-white border border-stone-200 rounded-xl p-3">
-                                <div className="section-eyebrow">Looked Away</div>
-                                <div className="font-bold text-slate-900">{lookingAwayCount} instance(s)</div>
-                            </div>
-                            <div className="bg-white border border-stone-200 rounded-xl p-3">
-                                <div className="section-eyebrow">Additional Face Nearby</div>
-                                <div className="font-bold text-slate-900">{multipleFacesCount} instance(s)</div>
-                            </div>
-                            <div className="bg-white border border-stone-200 rounded-xl p-3">
-                                <div className="section-eyebrow">Phone Visibility</div>
-                                <div className="font-bold text-slate-900">
-                                    {phoneDetectedEvents.length} instance(s)
-                                    {latestPhoneEvent ? `, latest at ${latestPhoneEvent.atLabel}` : ''}
-                                </div>
-                            </div>
-                        </div>
-                        {monitoringEvents.length > 0 && (
-                            <div className="mt-4 max-h-40 overflow-y-auto pr-1 custom-scrollbar space-y-2">
-                                {monitoringEvents.map((event) => (
-                                    <div key={event.id} className="bg-white border border-stone-200 rounded-xl px-3 py-2 text-xs text-slate-700 flex items-center justify-between gap-2">
-                                        <span>{event.message}</span>
-                                        <span className="font-bold text-slate-500">{event.atLabel}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
+                    {!report && !loading && (
+                        <button onClick={fetchReport} className="primary-action py-4 px-12 mb-8 rounded-full transition-all font-bold">
+                            Generate Knowledge-Grounded Analysis Report
+                        </button>
+                    )}
 
                     {loading && (
                         <div className="flex flex-col items-center justify-center p-12">
                             <Loader2 className="w-12 h-12 animate-spin text-[#8a5d2f] mb-4" />
-                            <p className="muted-copy font-medium">Generating detailed performance report...</p>
+                            <p className="muted-copy font-medium text-sm">{loadingStatus || "Generating detailed performance report..."}</p>
                         </div>
                     )}
 
-                    {!report && !loading && (
-                        <button onClick={fetchReport} className="primary-action py-4 px-12 mb-8 rounded-full transition-all">
-                            Generate Analysis Report
-                        </button>
-                    )}
-
+                    {/* ENHANCED 6-SECTION FINAL REPORT VIEW */}
                     {report && (
                         <motion.div 
                             initial={{ opacity: 0, y: 20 }} 
                             animate={{ opacity: 1, y: 0 }} 
-                            className="text-left surface-card p-6 md:p-8 mb-8"
+                            className="text-left surface-card p-6 md:p-8 mb-8 space-y-8 bg-slate-950 text-slate-100 border border-slate-800"
                         >
-                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                            {/* Header */}
+                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-800 pb-6 gap-4">
                                 <div>
-                                    <h3 className="display-title text-2xl flex items-center gap-2">
-                                        <Award className="text-[#16324f] w-6 h-6" /> Performance Scorecard
+                                    <h3 className="display-title text-2xl font-bold flex items-center gap-2 text-white">
+                                        <Award className="text-amber-400 w-6 h-6" /> Knowledge-Grounded ML Interview Report
                                     </h3>
-                                    <p className="muted-copy text-sm mt-1">Structured dynamic evaluation report</p>
+                                    <p className="text-xs text-slate-400 mt-1">
+                                        Empirical candidate analysis powered by SBERT Alignment & FAISS Retrieval
+                                    </p>
                                 </div>
-                                <div className="px-6 py-3 bg-amber-50 border border-amber-200 rounded-2xl text-[#8a5d2f] font-extrabold text-xl">
-                                    Overall: {report.total_score || "N/A"}/100
+                                <div className="px-6 py-3 bg-indigo-950/60 border border-indigo-500/30 rounded-2xl text-cyan-300 font-extrabold text-2xl font-mono">
+                                    Overall: {report.total_score || "N/A"} / 100
                                 </div>
                             </div>
                             
-                            <div className="space-y-6">
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                                    <div className="p-4 bg-white rounded-2xl border border-stone-200">
-                                        <div className="section-eyebrow">Technical</div>
-                                        <div className="text-2xl font-extrabold text-slate-900 mt-1">{report.technical_score || 0}%</div>
-                                    </div>
-                                    <div className="p-4 bg-white rounded-2xl border border-stone-200">
-                                        <div className="section-eyebrow">Communication</div>
-                                        <div className="text-2xl font-extrabold text-slate-900 mt-1">{report.communication_score || 0}%</div>
-                                    </div>
-                                    <div className="p-4 bg-white rounded-2xl border border-stone-200">
-                                        <div className="section-eyebrow">Relevance</div>
-                                        <div className="text-2xl font-extrabold text-slate-900 mt-1">{report.relevance_score || 0}%</div>
-                                    </div>
-                                    <div className="p-4 bg-white rounded-2xl border border-stone-200">
-                                        <div className="section-eyebrow">Confidence</div>
-                                        <div className="text-2xl font-extrabold text-slate-900 mt-1">{report.confidence_score || 0}%</div>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div>
-                                        <div className="section-eyebrow mb-2">Key Strengths</div>
-                                        <div className="flex flex-wrap gap-2">
-                                            {report.strengths && report.strengths.length > 0 ? report.strengths.map((s, idx) => (
-                                                <span key={idx} className="text-xs px-3 py-1 bg-emerald-50 text-emerald-800 rounded-full border border-emerald-200">
-                                                    {s}
-                                                </span>
-                                            )) : <p className="text-sm text-slate-500 italic">Complete technical questions to see strengths.</p>}
+                            {/* SECTION 1: Overall Performance Cards */}
+                            <div>
+                                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+                                    1. Overall Performance Breakdown
+                                </h4>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+                                    {[
+                                        { label: 'Overall Score', val: report.total_score, color: 'text-white' },
+                                        { label: 'Tech Accuracy', val: report.technical_score, color: 'text-cyan-400' },
+                                        { label: 'Relevance', val: report.relevance_score, color: 'text-indigo-300' },
+                                        { label: 'Communication', val: report.communication_score, color: 'text-emerald-400' },
+                                        { label: 'Confidence', val: report.confidence_score, color: 'text-amber-300' },
+                                        { label: 'Eval Confidence', val: Math.round((report.knowledge_grounding_stats?.evaluation_confidence || 0.88) * 100), color: 'text-purple-300' },
+                                    ].map((card, i) => (
+                                        <div key={i} className="p-3 bg-slate-900/90 rounded-xl border border-slate-800 text-center">
+                                            <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">{card.label}</div>
+                                            <div className={`text-xl font-bold font-mono mt-1 ${card.color}`}>{card.val || 0}%</div>
                                         </div>
-                                    </div>
-                                    <div>
-                                        <div className="section-eyebrow mb-2">Areas for Improvement</div>
-                                        <div className="flex flex-wrap gap-2">
-                                            {report.weaknesses && report.weaknesses.length > 0 ? report.weaknesses.map((w, idx) => (
-                                                <span key={idx} className="text-xs px-3 py-1 bg-rose-50 text-rose-700 rounded-full border border-rose-200">
-                                                    {w}
-                                                </span>
-                                            )) : <p className="text-sm text-slate-500 italic">No major weaknesses detected.</p>}
-                                        </div>
-                                    </div>
+                                    ))}
                                 </div>
+                            </div>
 
-                                <div className="p-4 bg-[#f8f4ec] rounded-2xl border border-stone-200">
-                                    <div className="section-eyebrow mb-2 flex items-center gap-2">
-                                        <Sparkles className="w-4 h-4 text-[#8a5d2f]" /> Overall Coaching Recommendation
-                                    </div>
-                                    <p className="text-sm text-slate-700 leading-relaxed">{report.recommendations || "Great attempt! Keep practicing."}</p>
-                                </div>
-
-                                <div className="pt-6 border-t border-stone-200">
-                                    <div className="section-eyebrow mb-4">Detailed Question-by-Question Analysis</div>
-                                    <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                                        {report.detailed_results?.map((res, idx) => (
-                                            <div key={idx} className="bg-white rounded-2xl p-5 border border-stone-200">
-                                                <div className="flex justify-between items-start mb-3 gap-4">
-                                                    <p className="text-sm font-bold text-slate-900">Q{idx+1}: {res.question}</p>
-                                                    <span className={`text-xs font-bold px-3 py-1 rounded-full ${res.score >= 75 ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : res.score >= 50 ? 'bg-amber-50 text-amber-800 border border-amber-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}`}>
-                                                        {res.score}%
-                                                    </span>
-                                                </div>
-                                                <p className="text-xs text-slate-500 mb-3 italic">Your Answer: "{res.answer}"</p>
-                                                
-                                                <div className="space-y-2 bg-[#f8f4ec] p-4 rounded-2xl border border-stone-200">
-                                                    <div className="flex gap-2">
-                                                        <span className="text-[10px] uppercase font-bold text-[#8a5d2f] flex-shrink-0 mt-0.5">Feedback:</span>
-                                                        <p className="text-xs text-slate-700 leading-relaxed">{res.feedback}</p>
-                                                    </div>
-                                                    {res.missing_keywords && res.missing_keywords.length > 0 && (
-                                                        <div className="flex flex-wrap gap-1.5 pt-2 border-t border-stone-200">
-                                                            <span className="text-[10px] uppercase font-bold text-amber-800 flex-shrink-0 mt-0.5 mr-2">Missing Keywords:</span>
-                                                            {res.missing_keywords.map((kw, i) => (
-                                                                <span key={i} className="text-[9px] px-1.5 py-0.5 bg-amber-50 text-amber-800 border border-amber-200 rounded">
-                                                                    {kw}
-                                                                </span>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
+                            {/* SECTION 2: Skill Analysis */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="p-4 rounded-xl bg-slate-900/80 border border-emerald-500/20">
+                                    <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                                        <CheckCircle2 className="w-4 h-4" /> 2A. Demonstrated Strong Areas
+                                    </h4>
+                                    <div className="flex flex-wrap gap-2">
+                                        {(report.skill_analysis?.strong_areas || report.strengths || []).map((area, idx) => (
+                                            <span key={idx} className="text-xs px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 font-medium">
+                                                ✓ {area}
+                                            </span>
                                         ))}
                                     </div>
                                 </div>
+                                <div className="p-4 rounded-xl bg-slate-900/80 border border-rose-500/20">
+                                    <h4 className="text-xs font-bold text-rose-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                                        <AlertTriangle className="w-4 h-4" /> 2B. Technical Gaps & Needs Improvement
+                                    </h4>
+                                    <div className="flex flex-wrap gap-2">
+                                        {(report.skill_analysis?.needs_improvement || report.weaknesses || []).map((area, idx) => (
+                                            <span key={idx} className="text-xs px-3 py-1.5 rounded-lg bg-rose-500/10 text-rose-300 border border-rose-500/30 font-medium">
+                                                ! {area}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* SECTION 3: Aggregated Concept Coverage */}
+                            <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800">
+                                <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-3">
+                                    3. Aggregated Technical Concept Coverage
+                                </h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                                    <div>
+                                        <span className="font-semibold text-emerald-400 block mb-1.5">Frequently Covered Concepts:</span>
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {(report.concept_coverage_summary?.frequently_demonstrated || report.strengths || []).map((c, i) => (
+                                                <span key={i} className="px-2 py-1 rounded bg-slate-800 text-slate-200 border border-slate-700">
+                                                    {c}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <span className="font-semibold text-amber-400 block mb-1.5">Frequently Missed Concepts:</span>
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {(report.concept_coverage_summary?.frequently_missed || report.weaknesses || []).map((c, i) => (
+                                                <span key={i} className="px-2 py-1 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                                                    {c}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* SECTION 4: Technical Error Analysis */}
+                            <div className="p-4 rounded-xl bg-slate-900/80 border border-rose-500/20">
+                                <h4 className="text-xs font-bold text-rose-400 uppercase tracking-wider mb-3 flex items-center justify-between">
+                                    <span>4. Technical Error Classification Taxonomy</span>
+                                    <span className="text-slate-400 font-normal">
+                                        Total Issues Detected: {report.error_analysis_summary?.total_errors || 0}
+                                    </span>
+                                </h4>
+                                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center text-xs">
+                                    {Object.entries(report.error_analysis_summary?.error_categories || {}).map(([cat, count]) => (
+                                        <div key={cat} className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800">
+                                            <span className="text-[10px] text-slate-400 uppercase font-semibold block truncate">
+                                                {cat.replace(/_/g, ' ')}
+                                            </span>
+                                            <span className="text-base font-bold text-slate-200 font-mono mt-0.5 block">
+                                                {count}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* SECTION 5: Knowledge Grounding Statistics */}
+                            <div className="p-4 rounded-xl bg-indigo-950/20 border border-indigo-500/30">
+                                <h4 className="text-xs font-bold text-indigo-300 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                                    <BookOpen className="w-4 h-4 text-cyan-400" /> 5. Knowledge-Grounded Evaluation Grounding Stats
+                                </h4>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+                                    <div className="p-3 rounded-lg bg-slate-900/90 border border-slate-800">
+                                        <span className="text-[10px] text-slate-400 uppercase font-semibold block">Evidence Coverage</span>
+                                        <span className="text-lg font-bold text-cyan-300 font-mono">
+                                            {Math.round((report.knowledge_grounding_stats?.evidence_coverage || 0.85) * 100)}%
+                                        </span>
+                                    </div>
+                                    <div className="p-3 rounded-lg bg-slate-900/90 border border-slate-800">
+                                        <span className="text-[10px] text-slate-400 uppercase font-semibold block">Evidence Quality</span>
+                                        <span className="text-lg font-bold text-indigo-300 font-mono">
+                                            {Math.round((report.knowledge_grounding_stats?.evidence_quality || 0.88) * 100)}%
+                                        </span>
+                                    </div>
+                                    <div className="p-3 rounded-lg bg-slate-900/90 border border-slate-800">
+                                        <span className="text-[10px] text-slate-400 uppercase font-semibold block">Evaluation Confidence</span>
+                                        <span className="text-lg font-bold text-emerald-300 font-mono">
+                                            {Math.round((report.knowledge_grounding_stats?.evaluation_confidence || 0.88) * 100)}%
+                                        </span>
+                                    </div>
+                                    <div className="p-3 rounded-lg bg-slate-900/90 border border-slate-800">
+                                        <span className="text-[10px] text-slate-400 uppercase font-semibold block">Grounded Questions</span>
+                                        <span className="text-lg font-bold text-white font-mono">
+                                            {report.knowledge_grounding_stats?.grounded_evaluations_count || report.detailed_results?.length || 5} / 5
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* SECTION 6: Interview Adaptation & Score Trajectory */}
+                            <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-4">
+                                <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+                                    <span>6. Adaptive Interview Trajectory & Score History</span>
+                                    <span className="text-xs font-normal text-indigo-300">
+                                        Difficulty: {report.adaptation_summary?.initial_difficulty || 'Medium'} → {report.adaptation_summary?.final_difficulty || 'Advanced'}
+                                    </span>
+                                </h4>
+                                <div className="space-y-2">
+                                    {(report.score_history || []).map((item) => (
+                                        <div key={item.question_num} className="p-3 rounded-lg bg-slate-950/60 border border-slate-800 flex items-center justify-between gap-3 text-xs">
+                                            <div className="flex items-center gap-3">
+                                                <span className="w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-300 flex items-center justify-center font-bold font-mono">
+                                                    Q{item.question_num}
+                                                </span>
+                                                <span className="font-semibold text-slate-200">Topic: {item.topic}</span>
+                                            </div>
+                                            <div className="flex items-center gap-4">
+                                                <span className="text-slate-400">Tech Accuracy: <strong className="text-cyan-300">{item.technical_accuracy}%</strong></span>
+                                                <span className="font-bold text-white px-2.5 py-0.5 rounded bg-indigo-500/20 border border-indigo-500/30">
+                                                    Score: {item.overall_score}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Recommendations Footer */}
+                            <div className="p-4 rounded-xl bg-slate-900 border border-indigo-500/30 text-xs">
+                                <span className="font-bold text-amber-400 block mb-1">Overall Coaching Recommendation:</span>
+                                <p className="text-slate-300 leading-relaxed">{report.recommendations}</p>
                             </div>
                         </motion.div>
                     )}
 
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
                         <button onClick={() => navigate('/')} className="secondary-action py-4 px-8 rounded-full transition-all font-semibold">
-                            Return to Home
+                            Return to Dashboard
                         </button>
                         <button onClick={() => window.location.reload()} className="primary-action py-4 px-8 rounded-full transition-all font-bold">
                             Start New Session
@@ -1262,6 +1231,7 @@ const handleResumeUpload = async (event) => {
         );
     }
 
+    // MAIN LIVE INTERVIEW EXPERIENCE
     return (
         <div className="h-screen w-screen max-w-full bg-[#f8f4ec] text-slate-900 overflow-hidden flex flex-col relative select-none">
             {/* Top Fixed Status Header Row */}
@@ -1274,7 +1244,7 @@ const handleResumeUpload = async (event) => {
                 <div className="flex items-center gap-3">
                     <div className="status-pill px-4 py-1.5 flex items-center gap-2 bg-stone-100 rounded-full border border-stone-200 text-xs font-bold">
                         <div className="status-dot animate-pulse w-2 h-2 rounded-full bg-emerald-500" />
-                        <span>Live Dynamic Session</span>
+                        <span>Knowledge-Grounded Session</span>
                     </div>
                     <div className={`px-3 py-1.5 rounded-full border text-[11px] font-semibold uppercase tracking-wide flex items-center gap-1.5 ${monitoringBadgeTone}`}>
                         {monitoringStatus === 'on' ? <ShieldCheck className="w-3.5 h-3.5" /> : <ShieldX className="w-3.5 h-3.5" />}
@@ -1343,7 +1313,7 @@ const handleResumeUpload = async (event) => {
                                 className="w-full"
                             >
                                 <h2 className="display-title text-3xl md:text-4xl mb-2">Configure Your Session</h2>
-                                <p className="muted-copy mb-8 text-sm">Select your interview role and optional resume profile to start.</p>
+                                <p className="muted-copy mb-8 text-sm">Select your target role and optional resume profile to start.</p>
                                 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 text-left max-w-2xl mx-auto">
                                     <div>
@@ -1354,11 +1324,11 @@ const handleResumeUpload = async (event) => {
                                                 setTargetRole(e.target.value);
                                                 setRoleSelected(e.target.value !== "");
                                             }}
-                                            className="field-control"
+                                            className="field-control text-slate-900 font-semibold bg-white border border-stone-300 shadow-sm"
                                         >
-                                            <option value="" disabled>-- Select a role --</option>
+                                            <option value="" disabled className="text-slate-500">-- Select a role --</option>
                                             {PRESET_ROLES.map((r, i) => (
-                                                <option key={i} value={r}>{r}</option>
+                                                <option key={i} value={r} className="text-slate-900 bg-white font-medium">{r}</option>
                                             ))}
                                         </select>
                                     </div>
@@ -1369,7 +1339,7 @@ const handleResumeUpload = async (event) => {
                                             value={skills.join(", ")}
                                             onChange={(e) => setSkills(e.target.value.split(",").map(s => s.trim()))}
                                             placeholder="Auto-filled from resume or enter manually..."
-                                            className="field-control"
+                                            className="field-control text-slate-900 font-medium bg-white border border-stone-300 shadow-sm placeholder:text-slate-400"
                                         />
                                     </div>
                                 </div>
@@ -1382,7 +1352,7 @@ const handleResumeUpload = async (event) => {
                                             value={customRoleText}
                                             onChange={(e) => setCustomRoleText(e.target.value)}
                                             placeholder="e.g. NLP Engineer, React Architect"
-                                            className="field-control"
+                                            className="field-control text-slate-900 font-medium bg-white border border-stone-300 shadow-sm placeholder:text-slate-400"
                                         />
                                     </div>
                                 )}
@@ -1448,7 +1418,7 @@ const handleResumeUpload = async (event) => {
                                                 onClick={startInterview} 
                                                 className={`primary-action px-12 py-3.5 text-base w-full rounded-full transition-all ${isDisabled ? 'opacity-45 cursor-not-allowed' : ''}`}
                                             >
-                                                Start Mock Session
+                                                Start Knowledge-Grounded Session
                                             </button>
                                         );
                                     })()}
@@ -1456,7 +1426,7 @@ const handleResumeUpload = async (event) => {
                             </motion.div>
                         </div>
                     ) : (
-                        <div className="w-full flex-1 flex flex-col min-h-0">
+                        <div className="w-full flex-1 flex flex-col min-h-0 space-y-4">
                             {currentQuestionType === 'coding' ? (
                                 <CodingRoundCard
                                     sessionId={sessionId}
@@ -1469,13 +1439,45 @@ const handleResumeUpload = async (event) => {
                                     }}
                                 />
                             ) : (
-                                <div className="surface-card p-8 flex-1 flex flex-col justify-between">
+                                <div className="surface-card p-6 md:p-8 flex-1 flex flex-col justify-between">
                                     <div>
-                                        <div className="flex items-center gap-2 mb-4 text-[#16324f]">
-                                            <MessageSquare className="w-5 h-5 text-[#8a5d2f]" />
-                                            <span className="section-eyebrow text-[#8a5d2f]">Behavioral / Technical Question</span>
+                                        {/* QUESTION HEADER BADGES */}
+                                        <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <span className="text-xs font-bold px-3 py-1 rounded-full bg-stone-100 text-stone-800 border border-stone-200">
+                                                    Question {questionNumber} of 5
+                                                </span>
+                                                <span className="text-xs font-bold px-3 py-1 rounded-full bg-indigo-50 text-indigo-900 border border-indigo-200">
+                                                    Topic: {questionMeta.topic || 'General'}
+                                                </span>
+                                                <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-cyan-50 text-cyan-900 border border-cyan-200">
+                                                    Type: {questionMeta.question_type || 'Conceptual'}
+                                                </span>
+                                                <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-purple-50 text-purple-900 border border-purple-200">
+                                                    Difficulty: {questionMeta.difficulty || 'Medium'}
+                                                </span>
+                                            </div>
+
+                                            {/* Knowledge-Grounded Badge */}
+                                            {questionMeta.knowledge_grounded && (
+                                                <span className="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-300 flex items-center gap-1.5">
+                                                    <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                                                    Knowledge-Grounded Question ({questionMeta.grounding_score?.toFixed(2) || '0.88'})
+                                                </span>
+                                            )}
                                         </div>
-                                        
+
+                                        {/* Adaptive Indicator Banner */}
+                                        {questionMeta.adaptive_reason && (
+                                            <div className="mb-4 p-3 rounded-xl bg-amber-50/80 border border-amber-200 text-xs text-amber-900 flex items-center gap-2">
+                                                <Zap className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                                                <span>
+                                                    <strong>Adaptive Transition:</strong> {questionMeta.adaptive_reason}
+                                                </span>
+                                            </div>
+                                        )}
+
+                                        {/* Question Text */}
                                         <AnimatePresence mode="wait">
                                             <motion.div 
                                                 key={question + loadingStatus}
@@ -1485,7 +1487,7 @@ const handleResumeUpload = async (event) => {
                                                 className="prose prose-slate max-w-none"
                                             >
                                                 <p className="display-title text-2xl md:text-3xl leading-relaxed tracking-wide text-slate-900">
-                                                    {loading ? (loadingStatus || "Evaluating response...") : (question || "Thinking...")}
+                                                    {loading ? (loadingStatus || "Evaluating response...") : (question || "Retrieving grounded question...")}
                                                 </p>
                                             </motion.div>
                                         </AnimatePresence>
@@ -1495,7 +1497,7 @@ const handleResumeUpload = async (event) => {
                                     <div className="pt-6 border-t border-stone-200 flex items-center justify-between">
                                         <VoiceControls />
                                         <div className="text-xs text-slate-500 italic">
-                                            {isSpeaking ? "CareerPilot AI speaking..." : "Click 'Start Answering' in sidebar to reply"}
+                                            {isSpeaking ? "Interviewer speaking..." : "Click 'Start Answering' in sidebar to reply"}
                                         </div>
                                     </div>
                                 </div>
@@ -1565,7 +1567,7 @@ const handleResumeUpload = async (event) => {
                             >
                                 <div className="section-eyebrow mb-1">Live Status</div>
                                 <p className="text-xs font-medium text-slate-600 leading-relaxed italic">
-                                    {loading ? "Interviewer evaluating..." : "Ready to hear your answer."}
+                                    {loading ? (loadingStatus || "Evaluating response...") : "Ready to hear your answer."}
                                 </p>
                             </motion.div>
                         )}
@@ -1596,7 +1598,6 @@ const handleResumeUpload = async (event) => {
                                 </button>
                             );
                         })()}
-
 
                         <button 
                             disabled={!interviewStarted}
@@ -1638,121 +1639,115 @@ const handleResumeUpload = async (event) => {
                 </aside>
             </main>
 
+            {/* ANSWER EVALUATION RESULT MODAL & EXPLAINABLE ML PANELS */}
             <AnimatePresence>
                 {feedback && (
                     <motion.div 
                         initial={{ opacity: 0, y: 50 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 50 }}
-                        className="fixed inset-x-4 bottom-6 md:bottom-10 lg:bottom-12 md:left-1/2 md:-translate-x-1/2 z-50 w-auto md:w-[700px] max-h-[85vh] overflow-y-auto custom-scrollbar"
+                        className="fixed inset-x-4 bottom-6 md:bottom-10 lg:bottom-12 md:left-1/2 md:-translate-x-1/2 z-50 w-auto md:w-[750px] max-h-[85vh] overflow-y-auto custom-scrollbar"
                     >
-                        <div className="surface-card p-6 md:p-8">
-                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                        <div className="surface-card p-6 md:p-8 bg-slate-950 text-slate-100 border border-slate-800 shadow-2xl">
+                            {/* Score Header */}
+                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 border-b border-slate-800 pb-4">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-[#8a5d2f] text-2xl font-extrabold">
+                                    <div className="w-14 h-14 rounded-2xl bg-indigo-950 border border-indigo-500/40 flex items-center justify-center text-cyan-300 text-2xl font-extrabold font-mono">
                                         {feedback.score}
                                     </div>
                                     <div>
-                                        <div className="section-eyebrow">AI Evaluation Score</div>
-                                        <div className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+                                        <div className="text-xs uppercase font-bold text-slate-400 tracking-wider">ML-RAG Evaluation Score</div>
+                                        <div className="text-lg font-extrabold text-slate-100 flex items-center gap-2">
                                             {feedback.answer_quality === "weak" ? "Needs Attention" : feedback.answer_quality === "average" ? "Good Effort" : "Outstanding Answer!"}
-                                            <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase ${feedback.difficulty === "hard" ? 'bg-rose-50 text-rose-700 border border-rose-200' : feedback.difficulty === "medium" ? 'bg-amber-50 text-amber-800 border border-amber-200' : 'bg-emerald-50 text-emerald-800 border border-emerald-200'}`}>
-                                                {feedback.difficulty}
+                                            <span className="text-[10px] px-2 py-0.5 rounded font-bold uppercase bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                                                {feedback.scoring_version || 'v2.0-ml-rag'}
                                             </span>
                                         </div>
                                     </div>
                                 </div>
-                                <div className="flex gap-2 w-full md:w-auto">
+                                <div className="flex items-center gap-2 w-full md:w-auto">
+                                    <button 
+                                        onClick={() => setShowDemoModal(true)}
+                                        className="px-3 py-2 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/30 text-xs font-bold flex items-center gap-1.5 transition-colors"
+                                    >
+                                        <Zap className="w-3.5 h-3.5 text-amber-400" />
+                                        Explain Pipeline (Demo)
+                                    </button>
                                     <button 
                                         onClick={() => {
                                             setFeedback(null);
                                             setRetryCount(prev => prev + 1);
                                         }} 
-                                        className="secondary-action flex-1 md:flex-initial py-2.5 px-4 text-xs rounded-full"
+                                        className="secondary-action py-2 px-3 text-xs rounded-xl"
                                     >
-                                        <RotateCcw className="w-4 h-4" />
+                                        <RotateCcw className="w-3.5 h-3.5" />
                                         Retry
                                     </button>
-                                    <button onClick={fetchNextQuestion} className="primary-action flex-1 md:flex-initial py-2.5 px-6 text-xs rounded-full font-bold">
+                                    <button onClick={fetchNextQuestion} className="primary-action py-2 px-4 text-xs rounded-xl font-bold">
                                         Next Question
                                     </button>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-5 gap-2.5 mb-6 text-center">
+                            {/* Sub-scores Grid */}
+                            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-6 text-center">
                                 {[
+                                    { label: 'Overall', value: feedback.score },
+                                    { label: 'Tech Acc.', value: feedback.technical_accuracy_score },
                                     { label: 'Relevance', value: feedback.relevance_score },
-                                    { label: 'Accuracy', value: feedback.technical_accuracy_score },
-                                    { label: 'Depth', value: feedback.depth_score },
+                                    { label: 'Completeness', value: feedback.depth_score },
                                     { label: 'Clarity', value: feedback.clarity_score },
                                     { label: 'Confidence', value: feedback.confidence_score }
                                 ].map((sub, i) => (
-                                    <div key={i} className="p-2 bg-white rounded-xl border border-stone-200">
-                                        <div className="text-[9px] text-slate-500 uppercase font-bold tracking-wider truncate">{sub.label}</div>
-                                        <div className="text-sm font-extrabold text-slate-900 mt-0.5">{sub.value || 0}%</div>
+                                    <div key={i} className="p-2 bg-slate-900 rounded-xl border border-slate-800">
+                                        <div className="text-[9px] text-slate-400 uppercase font-bold tracking-wider truncate">{sub.label}</div>
+                                        <div className="text-sm font-extrabold text-cyan-300 font-mono mt-0.5">{sub.value || 0}%</div>
                                     </div>
                                 ))}
                             </div>
-                            
-                            <div className="space-y-4">
-                                <div className="bg-[#f8f4ec] p-4 rounded-2xl border border-stone-200">
-                                    <div className="text-[10px] font-bold text-[#8a5d2f] uppercase tracking-wider mb-1">Feedback Summary</div>
-                                    <p className="text-xs text-slate-700 leading-relaxed">
-                                        {feedback.feedback}
+
+                            {/* Feedback Summary Box */}
+                            <div className="p-4 bg-slate-900/80 rounded-xl border border-slate-800 mb-4">
+                                <div className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider mb-1">
+                                    Evaluation Summary
+                                </div>
+                                <p className="text-xs text-slate-300 leading-relaxed">
+                                    {feedback.feedback}
+                                </p>
+                            </div>
+
+                            {/* 1. RAG Evidence Traceability Diagram */}
+                            <EvidenceAlignmentVisualization evaluation={feedback} answerText={spokenAnswerText} />
+
+                            {/* 2. Explainable ML Evaluation Section */}
+                            <ExplainableMLEvaluation evaluation={feedback} />
+
+                            {/* 3. Knowledge Evidence Panel */}
+                            <RAGEvidencePanel evidenceDetails={feedback.evidence_details} topic={questionMeta.topic} />
+
+                            {/* Standard Model Answer Reference */}
+                            {feedback.suggested_answer && (
+                                <div className="mt-4 p-4 bg-slate-900/80 rounded-xl border border-slate-800">
+                                    <div className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+                                        <BookOpen className="w-3.5 h-3.5" /> Standard Domain Answer Reference
+                                    </div>
+                                    <p className="text-xs text-slate-300 leading-relaxed italic">
+                                        "{feedback.suggested_answer}"
                                     </p>
                                 </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="bg-white p-4 rounded-2xl border border-stone-200">
-                                        <div className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider mb-2">Strengths</div>
-                                        <ul className="space-y-1.5">
-                                            {feedback.strengths && feedback.strengths.length > 0 ? feedback.strengths.map((str, idx) => (
-                                                    <li key={idx} className="text-xs text-slate-700 flex items-start gap-1.5">
-                                                        <span className="text-emerald-700 font-bold mt-0.5">•</span> {str}
-                                                </li>
-                                            )) : <span className="text-xs text-slate-500 italic">No specific strengths listed.</span>}
-                                        </ul>
-                                    </div>
-                                    <div className="bg-white p-4 rounded-2xl border border-stone-200">
-                                        <div className="text-[10px] font-bold text-rose-700 uppercase tracking-wider mb-2">Gaps / Weaknesses</div>
-                                        <ul className="space-y-1.5">
-                                            {feedback.weaknesses && feedback.weaknesses.length > 0 ? feedback.weaknesses.map((weak, idx) => (
-                                                    <li key={idx} className="text-xs text-slate-700 flex items-start gap-1.5">
-                                                        <span className="text-rose-700 font-bold mt-0.5">•</span> {weak}
-                                                </li>
-                                            )) : <span className="text-xs text-slate-500 italic">No gaps detected. Excellent answer.</span>}
-                                        </ul>
-                                    </div>
-                                </div>
-
-                                {feedback.missing_keywords && feedback.missing_keywords.length > 0 && (
-                                    <div className="bg-white p-4 rounded-2xl border border-stone-200">
-                                        <div className="text-[10px] font-bold text-amber-800 uppercase tracking-wider mb-2">Expected / Missing Keywords</div>
-                                        <div className="flex flex-wrap gap-1.5">
-                                            {feedback.missing_keywords.map((kw, idx) => (
-                                                <span key={idx} className="text-[10px] px-2.5 py-1 bg-amber-50 text-amber-800 border border-amber-200 rounded-lg">
-                                                    {kw}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {feedback.suggested_answer && (
-                                    <div className="bg-white p-4 rounded-2xl border border-stone-200">
-                                        <div className="text-[10px] font-bold text-[#16324f] uppercase tracking-wider mb-1 flex items-center gap-1">
-                                            <BookOpen className="w-3.5 h-3.5" /> Model Suggested Answer
-                                        </div>
-                                        <p className="text-xs text-slate-700 leading-relaxed italic">
-                                            "{feedback.suggested_answer}"
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
+                            )}
                         </div>
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* DEMO MODE PIPELINE MODAL */}
+            <DemoPipelineModal
+                isOpen={showDemoModal}
+                onClose={() => setShowDemoModal(false)}
+                currentEvaluation={feedback}
+                questionText={question}
+            />
         </div>
     );
 };

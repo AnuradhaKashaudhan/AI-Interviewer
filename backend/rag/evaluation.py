@@ -66,22 +66,22 @@ def run_evaluation():
         print(f"\n[Query #{idx}] '{query}'")
         print(f"Target Domain: {expected_domain}")
 
-        results = retriever.retrieve(query, domain=expected_domain, top_k=3)
+        results, diagnostics = retriever.retrieve(query=query, domain=expected_domain, top_k=3)
 
         if not results:
             print("  [FAIL] No results returned.")
             continue
 
         successful_retrievals += 1
-        print(f"  Found {len(results)} relevant chunks:")
+        print(f"  Found {len(results)} relevant chunks (Fallback used: {diagnostics.fallback_used}):")
 
         for r_idx, res in enumerate(results, start=1):
             source = res.metadata.get("source", "unknown")
             domain = res.metadata.get("domain", "unknown")
-            score = res.score
+            score = getattr(res, "rerank_score", getattr(res, "score", 0.0))
             snippet = res.content.replace("\n", " ")[:120]
 
-            print(f"   ({r_idx}) Score: {score:.4f} | Domain: {domain} | Source: {source}")
+            print(f"   ({r_idx}) Rerank Score: {score:.4f} | Domain: {domain} | Source: {source}")
             print(f"       Snippet: \"{snippet}...\"")
 
     print("\n" + "=" * 70)

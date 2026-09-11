@@ -15,11 +15,22 @@ from rag.config import (
     RAG_CHUNK_SIZE,
     RAG_CHUNK_OVERLAP,
 )
-from rag.schemas import DocumentMetadata, ChunkSchema, RetrievalResult, RAGHealthSchema
+from rag.schemas import (
+    DocumentMetadata,
+    ChunkSchema,
+    RetrievalResult,
+    RerankedResult,
+    RetrievalDiagnostics,
+    RAGHealthSchema,
+)
 from rag.document_loader import DocumentLoader, clean_text
+from rag.document_processor import DocumentProcessor
 from rag.chunker import TextChunker
 from rag.embeddings import RAGEmbeddings
 from rag.vector_store import FAISSVectorStore
+from rag.indexer import FAISSIndexer
+from rag.reranker import RAGReranker
+from rag.context_builder import ContextBuilder
 from rag.retriever import RAGRetriever
 from rag.rag_service import RAGService, get_rag_service
 from modules.question_generator import generate_rag_grounded_question
@@ -33,7 +44,6 @@ class TestRAGPipeline(unittest.TestCase):
         self.metadata_path = self.tmp_dir / "test_metadata.json"
 
     def tearDown(self):
-        # Cleanup temporary files
         if self.index_path.exists():
             self.index_path.unlink()
         if self.metadata_path.exists():
@@ -92,7 +102,7 @@ class TestRAGPipeline(unittest.TestCase):
         self.assertTrue(success)
         self.assertTrue(vector_store.is_available())
 
-        # Test index reload from disk
+        # Reload from disk
         reloaded_store = FAISSVectorStore(index_path=self.index_path, metadata_path=self.metadata_path)
         self.assertTrue(reloaded_store.is_available())
         self.assertEqual(reloaded_store.index.ntotal, len(chunks))
@@ -105,8 +115,23 @@ class TestRAGPipeline(unittest.TestCase):
         self.assertTrue(0.0 <= score <= 1.0)
         self.assertIn("content", chunk_dict)
 
+    def test_dynamic_query_construction(self):
+        """Verify dynamic semantic query construction from interview context."""
+        retriever = RAGRetriever(FAISSVectorStore(self.index_path, self.metadata_path), RAGEmbeddings())
+        query = retriever.construct_query(
+            skills=["Python", "SQL"],
+            target_role="Machine Learning Engineer",
+            topic="Machine Learning",
+            difficulty="medium",
+            current_question="What is regularization?",
+            candidate_answer="L1 and L2 regularization"
+        )
+        self.assertIn("Machine Learning Engineer", query)
+        self.assertIn("Python, SQL", query)
+        self.assertIn("What is regularization?", query)
+
     def test_retriever_metadata_filtering_and_fallback(self):
-        """Verify metadata filtering and fallback to semantic similarity."""
+        """Verify metadata filtering and fallback with diagnostics."""
         embedder = RAGEmbeddings()
         vector_store = FAISSVectorStore(index_path=self.index_path, metadata_path=self.metadata_path)
 
@@ -118,24 +143,51 @@ class TestRAGPipeline(unittest.TestCase):
         retriever = RAGRetriever(vector_store, embedder)
 
         # 1. Matching domain
-        res_match = retriever.retrieve("yield keyword", domain="python", top_k=2)
+        res_match, diag_match = retriever.retrieve(query="yield keyword", domain="python", top_k=2)
         self.assertTrue(len(res_match) > 0)
+        self.assertFalse(diag_match.fallback_used)
 
-        # 2. Non-matching domain should fall back gracefully to top semantic matches
-        res_fallback = retriever.retrieve("yield keyword", domain="non_existent_domain", top_k=2)
+        # 2. Non-matching domain triggers fallback
+        res_fallback, diag_fallback = retriever.retrieve(query="yield keyword", domain="non_existent_domain", top_k=2)
         self.assertTrue(len(res_fallback) > 0)
+        self.assertTrue(diag_fallback.fallback_used)
+
+    def test_reranker_and_context_builder(self):
+        """Verify RAGReranker score boosting and ContextBuilder formatting/deduplication."""
+        reranker = RAGReranker()
+        builder = ContextBuilder(max_characters=1000)
+
+        raw_results = [
+            RetrievalResult(
+                content="SQL INNER JOIN merges rows matching on key.",
+                score=0.75,
+                metadata={"domain": "sql", "topic": "joins", "source": "sql.md", "difficulty": "medium"}
+            ),
+            RetrievalResult(
+                content="SQL INNER JOIN merges rows matching on key.",
+                score=0.70,
+                metadata={"domain": "sql", "topic": "joins", "source": "sql.md", "difficulty": "medium"}
+            )
+        ]
+
+        reranked = reranker.rerank(raw_results, query="SQL INNER JOIN", domain="sql", top_k=2)
+        self.assertEqual(len(reranked), 2)
+        self.assertTrue(reranked[0].rerank_score >= reranked[0].original_score)
+
+        formatted_context = builder.build_context(reranked)
+        self.assertIn("[Source 1 | Domain: sql", formatted_context)
+        # Verify deduplication reduced duplicate snippet to single block in formatted output
+        self.assertEqual(formatted_context.count("[Source"), 1)
 
     def test_missing_index_fallback_behavior(self):
-        """Verify that missing FAISS index returns empty list without raising exceptions."""
-        non_existent_bin = self.tmp_dir / "missing.bin"
-        non_existent_json = self.tmp_dir / "missing.json"
-
-        empty_store = FAISSVectorStore(index_path=non_existent_bin, metadata_path=non_existent_json)
+        """Verify missing FAISS index returns empty list without raising exceptions."""
+        empty_store = FAISSVectorStore(index_path=self.tmp_dir / "missing.bin", metadata_path=self.tmp_dir / "missing.json")
         self.assertFalse(empty_store.is_available())
 
         retriever = RAGRetriever(empty_store, RAGEmbeddings())
-        results = retriever.retrieve("query")
+        results, diagnostics = retriever.retrieve(query="query")
         self.assertEqual(results, [])
+        self.assertFalse(diagnostics.fallback_used)
 
     def test_rag_health_check(self):
         """Verify RAGService health check response schema."""
@@ -144,6 +196,7 @@ class TestRAGPipeline(unittest.TestCase):
         self.assertIsInstance(health, RAGHealthSchema)
         self.assertIn(health.vector_store, ["faiss"])
         self.assertTrue(hasattr(health, "chunk_count"))
+        self.assertTrue(hasattr(health, "metadata_available"))
 
     def test_rag_grounded_question_mocked_gemini(self):
         """Verify RAG question generator prompt assembly with mocked Gemini client."""

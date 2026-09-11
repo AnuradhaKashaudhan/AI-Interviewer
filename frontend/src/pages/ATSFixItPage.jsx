@@ -4,11 +4,13 @@ import { ArrowLeft, Loader2 } from 'lucide-react';
 import FixItEditor from '../components/ats/FixItEditor.jsx';
 import FixItScorecard from '../components/ats/FixItScorecard.jsx';
 import { runClientHeuristics } from '../utils/atsHeuristics.js';
-import { API_BASE_URL, buildApiUrl } from '../utils/apiConfig.js';
+import { buildApiUrl } from '../utils/apiConfig.js';
+import { useATS } from '../context/ATSContext.jsx';
 
 const ATSFixItPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const atsContext = useATS();
   
   // State
   const [resumeText, setResumeText] = useState("");
@@ -19,37 +21,49 @@ const ATSFixItPage = () => {
   const [subScores, setSubScores] = useState({});
   const [issues, setIssues] = useState([]);
   const [totalInitialIssues, setTotalInitialIssues] = useState(0);
+  const [activeIssueId, setActiveIssueId] = useState(null);
   const [isReanalyzing, setIsReanalyzing] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   
-  // Refs for debouncing
+  // Refs for debouncing & initialization tracking
   const debounceTimer = useRef(null);
+  const initializedRef = useRef(false);
   
-  // Initialize from location state
+  // Initialize from location state or ATSContext fallback ONCE on mount
   useEffect(() => {
-    if (!location.state || !location.state.resumeText || !location.state.atsResults) {
-      // Direct navigation without state, redirect back
+    if (initializedRef.current) return;
+
+    let initialText = "";
+    let initialJd = "";
+    let atsResults = null;
+
+    // Prefer context data if context already has results from previous edits
+    if (atsContext.resumeText && atsContext.results) {
+      initialText = atsContext.resumeText;
+      initialJd = atsContext.jobDescription || "";
+      atsResults = atsContext.results;
+    } else if (location.state && location.state.resumeText && location.state.atsResults) {
+      initialText = location.state.resumeText;
+      initialJd = location.state.jobDescription || "";
+      atsResults = location.state.atsResults;
+    } else {
+      // Direct navigation without any state or stored ATS context, redirect back
       navigate('/ats-checker', { replace: true });
       return;
     }
     
-    const { resumeText: initialText, jobDescription: initialJd, atsResults } = location.state;
-    
-    const rawInitialText = initialText || "";
-    const cleanInitialText = rawInitialText.replace(/\s*\((add specific numbers|reduced load time by 40%|add numbers|add specific numbers[^\)]*)\)/gi, '');
+    const cleanInitialText = (initialText || "").replace(/\s*\((add specific numbers|reduced load time by 40%|add numbers|add specific numbers[^\)]*)\)/gi, '');
     
     setResumeText(cleanInitialText);
-    setJobDescription(initialJd || "");
+    setJobDescription(initialJd);
     setServerResults(atsResults);
     
     setCurrentScore(atsResults.score);
     setPreviousScore(atsResults.score);
     setSubScores(atsResults.sub_scores || {});
     
-    // We use the server issues if available, otherwise run heuristics
     let initialIssues = atsResults.issues || [];
     
-    // If the backend didn't send issues (e.g. old backend version), fallback to client
     if (initialIssues.length === 0) {
         const clientResults = runClientHeuristics(cleanInitialText, initialJd, atsResults);
         initialIssues = clientResults.issues;
@@ -58,8 +72,9 @@ const ATSFixItPage = () => {
     
     setIssues(initialIssues);
     setTotalInitialIssues(initialIssues.length);
+    initializedRef.current = true;
     setIsInitialized(true);
-  }, [location.state, navigate]);
+  }, [location.state, atsContext.resumeText, atsContext.results, atsContext.jobDescription, navigate]);
 
   // Run server re-check (debounced)
   const runServerRecheck = useCallback(async (currentText) => {
@@ -85,50 +100,105 @@ const ATSFixItPage = () => {
         setCurrentScore(data.score);
         setSubScores(data.sub_scores || {});
         setIssues(data.issues || []);
+
+        // Sync with ATSContext
+        if (atsContext.updateFixItResults) {
+          atsContext.updateFixItResults(currentText, data.score, data.sub_scores || {}, data.issues || [], data);
+        }
         
     } catch (err) {
         console.error("Failed to run server recheck:", err);
     } finally {
         setIsReanalyzing(false);
     }
-  }, [jobDescription, currentScore]);
+  }, [jobDescription, currentScore, atsContext]);
 
   // Handle applying a fix
-  const handleApplyFix = (issue) => {
+  const handleApplyFix = async (issue) => {
     if (!resumeText || !issue) return;
-    
-    let newText = resumeText;
-    
-    // Perform text replacement ONLY for specific actionable issue types with valid replacements.
-    if (issue.type === 'weak_verb' && issue.replacement_text) {
-        newText = newText.replace(issue.line_text, issue.replacement_text);
-    } else if (issue.type === 'filler_phrase') {
-        if (issue.suggestion.includes("(Remove this line entirely)") || !issue.replacement_text) {
-            newText = newText.replace(issue.line_text, "");
-        } else {
-            newText = newText.replace(issue.line_text, issue.replacement_text);
-        }
-    } else {
-        // For missing_metric or general advice issues, NEVER append advice text into resumeText.
-        // Dismiss the issue prompt from the active scorecard list so the user can edit manually.
-        setIssues(prev => prev.filter(i => i.id !== issue.id));
-        return;
+
+    const targetLine = issue.line_text ? issue.line_text.trim() : "";
+    const replacement = issue.replacement_text !== undefined ? issue.replacement_text : "";
+
+    if (!replacement && targetLine) {
+      console.warn("No replacement text available for issue:", issue);
+      return;
     }
-    
+
+    let newText = resumeText;
+
+    if (targetLine) {
+      const lines = newText.split('\n');
+      let replaced = false;
+
+      // Clean target for matching (remove bullet symbols and trim)
+      const cleanTarget = targetLine.replace(/^[-•*–►]\s*/, '').trim().toLowerCase();
+
+      // Find exact or closest line in resumeText
+      const lineIdx = lines.findIndex(l => {
+        const cleanL = l.replace(/^[-•*–►]\s*/, '').trim().toLowerCase();
+        if (!cleanL) return false;
+        return (
+          cleanL === cleanTarget ||
+          cleanL.includes(cleanTarget) ||
+          cleanTarget.includes(cleanL) ||
+          (cleanL.length > 20 && cleanTarget.length > 20 && cleanL.slice(0, 30) === cleanTarget.slice(0, 30))
+        );
+      });
+
+      if (lineIdx !== -1) {
+        const origLine = lines[lineIdx];
+        const hasBullet = /^[-•*–►]/.test(origLine.trim());
+        const bulletChar = hasBullet ? origLine.trim()[0] + " " : "";
+
+        let cleanRep = replacement.replace(/^[-•*–►]\s*/, '').trim();
+        lines[lineIdx] = bulletChar + cleanRep;
+        newText = lines.join('\n');
+        replaced = true;
+      }
+
+      if (!replaced) {
+        // Fallback: regex search across full text
+        const escapedTarget = targetLine.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+');
+        const regex = new RegExp(escapedTarget, 'i');
+        if (regex.test(newText)) {
+          newText = newText.replace(regex, replacement);
+          replaced = true;
+        }
+      }
+
+      if (!replaced) {
+        console.warn("Target line not found in resume content:", targetLine);
+        return;
+      }
+    } else if (replacement) {
+      // Section / Contact / Keyword insertion
+      newText = newText.trim() + "\n\n" + replacement;
+    } else {
+      return;
+    }
+
+    // Update canonical state & UI immediately
     setResumeText(newText);
-    
-    // Instantly run client heuristics for snappiness
+    setActiveIssueId(null);
+    setIsReanalyzing(true);
+
+    // Fast client-side recalculation for instant feedback
     const clientResults = runClientHeuristics(newText, jobDescription, serverResults);
-    
     setPreviousScore(currentScore);
     setCurrentScore(clientResults.score);
     setSubScores(clientResults.sub_scores);
-    setIssues(prev => prev.filter(i => i.id !== issue.id));
-    
+    setIssues(clientResults.issues);
+
+    if (atsContext.updateFixItResults) {
+      atsContext.updateFixItResults(newText, clientResults.score, clientResults.sub_scores, clientResults.issues, clientResults);
+    }
+
+    // Trigger full server re-analysis
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     debounceTimer.current = setTimeout(() => {
-        runServerRecheck(newText);
-    }, 1200);
+      runServerRecheck(newText);
+    }, 300);
   };
 
   if (!isInitialized) {
@@ -162,7 +232,9 @@ const ATSFixItPage = () => {
         <div className="lg:col-span-7 xl:col-span-8 h-full">
             <FixItEditor 
                 resumeText={resumeText} 
-                issues={issues} 
+                issues={issues}
+                activeIssueId={activeIssueId}
+                onSelectIssue={setActiveIssueId}
                 onApplyFix={handleApplyFix}
             />
         </div>
@@ -176,6 +248,9 @@ const ATSFixItPage = () => {
                 issues={issues}
                 totalInitialIssues={totalInitialIssues}
                 isReanalyzing={isReanalyzing}
+                activeIssueId={activeIssueId}
+                onSelectIssue={setActiveIssueId}
+                onApplyFix={handleApplyFix}
             />
         </div>
 

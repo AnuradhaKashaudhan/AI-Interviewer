@@ -39,18 +39,18 @@ const InterviewSetupPage = () => {
         <div className="grid gap-4">
           <label className="grid gap-2 text-sm font-medium text-slate-700">
             Role
-            <input value={setup.role} onChange={(event) => setSetup((current) => ({ ...current, role: event.target.value }))} className="rounded-2xl border border-stone-200 px-4 py-3 outline-none transition focus:border-[#16324f]" />
+            <input value={setup.role} onChange={(event) => setSetup((current) => ({ ...current, role: event.target.value }))} className="rounded-2xl border border-stone-300 bg-white px-4 py-3 text-slate-900 font-medium outline-none transition focus:border-[#16324f]" />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
             Industry
-            <input value={setup.industry} onChange={(event) => setSetup((current) => ({ ...current, industry: event.target.value }))} className="rounded-2xl border border-stone-200 px-4 py-3 outline-none transition focus:border-[#16324f]" />
+            <input value={setup.industry} onChange={(event) => setSetup((current) => ({ ...current, industry: event.target.value }))} className="rounded-2xl border border-stone-300 bg-white px-4 py-3 text-slate-900 font-medium outline-none transition focus:border-[#16324f]" />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
             Difficulty
-            <select value={setup.difficulty} onChange={(event) => setSetup((current) => ({ ...current, difficulty: event.target.value }))} className="rounded-2xl border border-stone-200 px-4 py-3 outline-none transition focus:border-[#16324f]">
-              <option>Easy</option>
-              <option>Medium</option>
-              <option>Hard</option>
+            <select value={setup.difficulty} onChange={(event) => setSetup((current) => ({ ...current, difficulty: event.target.value }))} className="rounded-2xl border border-stone-300 bg-white px-4 py-3 text-slate-900 font-medium outline-none transition focus:border-[#16324f]">
+              <option className="text-slate-900 bg-white">Easy</option>
+              <option className="text-slate-900 bg-white">Medium</option>
+              <option className="text-slate-900 bg-white">Hard</option>
             </select>
           </label>
           <div className="rounded-2xl border border-dashed border-stone-300 bg-stone-50 p-4 text-sm text-slate-600">

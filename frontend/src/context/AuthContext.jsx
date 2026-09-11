@@ -102,6 +102,19 @@ export const AuthProvider = ({ children }) => {
     try {
       await authApi.logout();
     } finally {
+      if (user && user.id) {
+        try {
+          localStorage.removeItem(`careerpilot_ats_state_${user.id}`);
+          sessionStorage.removeItem(`careerpilot_ats_state_${user.id}`);
+        } catch (e) {
+          console.error("Error clearing user ATS storage on logout:", e);
+        }
+      }
+      try {
+        localStorage.removeItem('careerpilot_ats_state_guest');
+        sessionStorage.removeItem('careerpilot_ats_state_guest');
+      } catch (e) {}
+
       setUser(null);
       setToken(null);
       setAuthToken(null);

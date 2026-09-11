@@ -437,6 +437,17 @@ def api_start_interview(request: StartInterviewRequest, current_user: User = Dep
             first_q = questions[0]
             audio_path = speak_question(first_q)
             
+            from models import Question as QuestionModel
+            q_rec = db.query(QuestionModel).filter(QuestionModel.session_id == session_id).order_by(QuestionModel.order.asc()).first()
+            
+            topic = getattr(q_rec, "topic", "Software Engineering") if q_rec else (request.skills[0] if request.skills else "General")
+            evidence_ids = getattr(q_rec, "evidence_ids", []) if q_rec else []
+            retrieval_scores = getattr(q_rec, "retrieval_scores", []) if q_rec else []
+            grounding_score = getattr(q_rec, "grounding_score", 0.50) if q_rec else 0.50
+            
+            from modules.interview_manager import build_evidence_details
+            evidence_details = build_evidence_details(evidence_ids, retrieval_scores, default_topic=topic)
+            
             return {
                 "session_id": session_id,
                 "first_question": first_q, 
@@ -444,6 +455,13 @@ def api_start_interview(request: StartInterviewRequest, current_user: User = Dep
                 "total_questions": 5,
                 "coding_round_enabled": coding_recommendation.get("enabled", False),
                 "coding_round_note": coding_recommendation.get("reason", ""),
+                "topic": topic,
+                "difficulty": "Medium",
+                "question_type": "Conceptual",
+                "estimated_skill": request.skills[0] if request.skills else request.role or "Software Engineering",
+                "knowledge_grounded": True,
+                "grounding_score": round(grounding_score, 3),
+                "evidence_details": evidence_details,
             }
         return {"message": "No questions generated."}
     except Exception as e:
@@ -455,10 +473,32 @@ def api_next_question(request: SessionRequest, current_user: User = Depends(get_
         question = next_question(db, request.session_id, current_user.id)
         if question:
             audio_path = speak_question(question)
+            from models import Question as QuestionModel
+            q_rec = db.query(QuestionModel).filter(QuestionModel.session_id == request.session_id).order_by(QuestionModel.order.desc()).first()
+            
+            q_order = getattr(q_rec, "order", 2) if q_rec else 2
+            topic = getattr(q_rec, "topic", "Technical") if q_rec else "Technical"
+            evidence_ids = getattr(q_rec, "evidence_ids", []) if q_rec else []
+            retrieval_scores = getattr(q_rec, "retrieval_scores", []) if q_rec else []
+            grounding_score = getattr(q_rec, "grounding_score", 0.50) if q_rec else 0.50
+            
+            q_type_map = {1: "Conceptual", 2: "Practical", 3: "Scenario", 4: "Architecture", 5: "Follow-up"}
+            q_type = "Coding" if question.startswith("CODING ROUND:") else q_type_map.get(q_order, "Technical")
+            
+            from modules.interview_manager import build_evidence_details
+            evidence_details = build_evidence_details(evidence_ids, retrieval_scores, default_topic=topic)
+            
             return {
                 "question": question,
                 "audio_path": audio_path,
-                "question_type": "coding" if question.startswith("CODING ROUND:") else "behavioral",
+                "question_type": q_type,
+                "topic": topic,
+                "difficulty": "Adaptive",
+                "estimated_skill": topic,
+                "knowledge_grounded": True,
+                "grounding_score": round(grounding_score, 3),
+                "evidence_details": evidence_details,
+                "adaptive_reason": f"Question {q_order} adapted based on your performance in {topic}."
             }
         return {"message": "No more questions.", "completed": True}
     except HTTPException as he:

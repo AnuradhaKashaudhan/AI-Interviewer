@@ -21,11 +21,13 @@ import PaymentSuccessPage from './pages/PaymentSuccessPage.jsx';
 import PaymentFailedPage from './pages/PaymentFailedPage.jsx';
 import BillingPage from './pages/BillingPage.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
+import { ATSProvider } from './context/ATSContext.jsx';
 
 function App() {
   return (
     <Router>
-      <ErrorBoundary>
+      <ATSProvider>
+        <ErrorBoundary>
         <Routes>
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/login" element={<LoginPage />} />
@@ -52,7 +54,8 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </ErrorBoundary>
-    </Router>
+    </ATSProvider>
+  </Router>
   );
 }
 

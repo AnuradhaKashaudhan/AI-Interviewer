@@ -323,15 +323,23 @@ h4 {
 .field-control {
   width: 100%;
   border-radius: 1rem;
-  border: 1px solid rgba(16, 26, 46, 0.12);
-  background: rgba(255, 255, 255, 0.98);
-  color: var(--text-main);
+  border: 1px solid rgba(16, 26, 46, 0.18);
+  background: #ffffff !important;
+  color: #0f172a !important;
+  font-weight: 500;
   padding-top: 0.9rem;
   padding-bottom: 0.9rem;
   padding-right: 1rem;
   padding-left: 1rem;
   outline: none;
   transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.field-control option,
+select option,
+input,
+textarea {
+  color: #0f172a;
 }
 
 /* Guarantee icon inputs have sufficient left padding so text never overlaps icons */
