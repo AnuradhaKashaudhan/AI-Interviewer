@@ -74,6 +74,9 @@ const DashboardPage = () => {
 
   const readinessScore = recommendation?.readiness_score || 74.5;
   const isPro = entitlements?.plan_id === 'pro' || entitlements?.plan_id === 'advanced';
+  const targetPlanId = recommendation?.recommended_product?.id || 'pro';
+  const targetPlanName = recommendation?.recommended_product?.name || 'Pro Technical Pack';
+  const alreadySubscribed = entitlements?.plan_id === targetPlanId || entitlements?.plan_name === targetPlanName;
 
   return (
     <div className="space-y-6">
@@ -234,17 +237,21 @@ const DashboardPage = () => {
                 Why am I seeing this recommendation?
               </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  const targetPlan = recommendation?.recommended_product?.id || 'pro';
-                  navigate(`/upgrade?plan=${targetPlan}`);
-                }}
-                className="flex w-full items-center justify-center gap-2 rounded-full bg-[#16324f] px-5 py-3 text-xs font-bold text-white transition hover:bg-[#0f2438]"
-              >
-                <span>Get Started ({recommendation?.recommended_product?.price_inr ? `₹${recommendation.recommended_product.price_inr}` : '₹19'})</span>
-                <ArrowRight className="h-4 w-4" />
-              </button>
+              {alreadySubscribed ? (
+                <div className="flex w-full items-center justify-center gap-2 rounded-full bg-emerald-50 border border-emerald-200 px-5 py-3 text-xs font-bold text-emerald-800">
+                  <CheckCircle2 className="h-4 w-4" />
+                  <span>You are subscribed to this plan</span>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => navigate(`/upgrade?plan=${targetPlanId}`)}
+                  className="flex w-full items-center justify-center gap-2 rounded-full bg-[#16324f] px-5 py-3 text-xs font-bold text-white transition hover:bg-[#0f2438]"
+                >
+                  <span>Get Started ({recommendation?.recommended_product?.price_inr ? `₹${recommendation.recommended_product.price_inr}` : '₹19'})</span>
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+              )}
             </div>
           </div>
         </div>
