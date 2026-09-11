@@ -1,9 +1,8 @@
 import React from 'react';
-import { Link, useOutletContext } from 'react-router-dom';
-import { ArrowRight, BarChart3, FileText, MessageSquareMore, ShieldCheck, Sparkles, Lock } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ArrowRight, BarChart3, FileText, MessageSquareMore, ShieldCheck, Sparkles } from 'lucide-react';
 
 const HomePage = () => {
-  const { user } = useOutletContext() || {};
 
   return (
     <div className="space-y-8">
@@ -22,11 +21,10 @@ const HomePage = () => {
           <div className="flex flex-wrap gap-3">
             <Link to="/interview/new" className="inline-flex items-center gap-2 rounded-full bg-[#16324f] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#0f2438]">
               Start New Interview
-              {!user ? <Lock className="h-4 w-4" /> : <ArrowRight className="h-4 w-4" />}
+              <ArrowRight className="h-4 w-4" />
             </Link>
             <Link to="/dashboard" className="inline-flex items-center gap-2 rounded-full border border-stone-300 bg-white px-5 py-3 text-sm font-semibold text-slate-800 transition hover:border-stone-400 hover:bg-stone-50">
               View Dashboard
-              {!user && <Lock className="h-3.5 w-3.5 text-slate-400" />}
             </Link>
           </div>
           <div className="grid gap-3 sm:grid-cols-3">

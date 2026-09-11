@@ -21,7 +21,6 @@ import {
   UserRound,
   X,
   LogOut,
-  Lock,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 
@@ -121,10 +120,7 @@ const AppShell = () => {
                     }
                   >
                     <Icon className="h-4 w-4" />
-                    <span className="text-sm font-medium flex-1">{item.label}</span>
-                    {item.protected && !user && (
-                      <Lock className="h-3.5 w-3.5 text-slate-400" />
-                    )}
+                    <span className="text-sm font-medium">{item.label}</span>
                   </NavLink>
                 );
               })}
@@ -296,10 +292,7 @@ const AppShell = () => {
                       }
                     >
                       <Icon className="h-4 w-4" />
-                      <span className="flex-1">{item.label}</span>
-                      {item.protected && !user && (
-                        <Lock className="h-3.5 w-3.5 text-slate-400" />
-                      )}
+                      {item.label}
                     </NavLink>
                   );
                 })}
