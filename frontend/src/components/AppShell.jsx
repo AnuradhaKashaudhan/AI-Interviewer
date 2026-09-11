@@ -21,16 +21,17 @@ import {
   UserRound,
   X,
   LogOut,
+  Lock,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 
 const navItems = [
-  { label: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
+  { label: 'Dashboard', to: '/dashboard', icon: LayoutDashboard, protected: true },
   { label: 'Features', to: '/features', icon: Sparkles },
-  { label: 'ATS Checker', to: '/ats-checker', icon: SquarePen },
-  { label: 'Coding Profile', to: '/coding-profile', icon: Code2 },
+  { label: 'ATS Checker', to: '/ats-checker', icon: SquarePen, protected: true },
+  { label: 'Coding Profile', to: '/coding-profile', icon: Code2, protected: true },
   { label: 'Pricing', to: '/pricing', icon: CreditCard },
-  { label: 'Billing & History', to: '/billing', icon: Receipt },
+  { label: 'Billing & History', to: '/billing', icon: Receipt, protected: true },
   { label: 'Help & Support', to: '/support', icon: ShieldQuestion },
 ];
 
@@ -120,7 +121,10 @@ const AppShell = () => {
                     }
                   >
                     <Icon className="h-4 w-4" />
-                    <span className="text-sm font-medium">{item.label}</span>
+                    <span className="text-sm font-medium flex-1">{item.label}</span>
+                    {item.protected && !user && (
+                      <Lock className="h-3.5 w-3.5 text-slate-400" />
+                    )}
                   </NavLink>
                 );
               })}
@@ -292,7 +296,10 @@ const AppShell = () => {
                       }
                     >
                       <Icon className="h-4 w-4" />
-                      {item.label}
+                      <span className="flex-1">{item.label}</span>
+                      {item.protected && !user && (
+                        <Lock className="h-3.5 w-3.5 text-slate-400" />
+                      )}
                     </NavLink>
                   );
                 })}

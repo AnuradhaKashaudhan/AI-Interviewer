@@ -15,7 +15,31 @@ const LoginPage = () => {
   const [submitting, setSubmitting] = useState(false);
 
   const searchParams = location.search;
+  const queryParams = new URLSearchParams(searchParams);
+  const redirectTarget = queryParams.get('redirect') || '';
   const signupUrl = `/signup${searchParams}`;
+
+  let displayTitle = "Welcome back to your interview workspace.";
+  let displayDesc = "Log in with your verified account to continue sessions, review feedback, and keep your workspace in sync.";
+  let displayEyebrow = "Sign in";
+
+  if (redirectTarget.includes('ats-checker')) {
+    displayEyebrow = "Login Required";
+    displayTitle = "Please log in to use the ATS Checker.";
+    displayDesc = "Your resume analysis and optimization results are linked to your account.";
+  } else if (redirectTarget.includes('coding-profile')) {
+    displayEyebrow = "Login Required";
+    displayTitle = "Please log in to access your Coding Profile.";
+    displayDesc = "Your coding statistics, history, and analytics are linked to your account.";
+  } else if (redirectTarget.includes('interview')) {
+    displayEyebrow = "Login Required";
+    displayTitle = "Please log in to start your personalized mock interview.";
+    displayDesc = "Your interview uses your resume and personalized skill profile.";
+  } else if (redirectTarget && redirectTarget !== '/dashboard') {
+    displayEyebrow = "Login Required";
+    displayTitle = "Please log in to access this feature.";
+    displayDesc = "The feature you are trying to access requires an authenticated account.";
+  }
 
   const validate = () => {
     const nextErrors = {};
@@ -42,9 +66,8 @@ const LoginPage = () => {
     try {
       const normalizedEmail = form.email.trim().toLowerCase();
       await login({ email: normalizedEmail, password: form.password });
-      const queryParams = new URLSearchParams(location.search);
-      const redirectTarget = queryParams.get('redirect') || '/dashboard';
-      navigate(redirectTarget, { replace: true });
+      const redirectTo = queryParams.get('redirect') || '/dashboard';
+      navigate(redirectTo, { replace: true });
     } catch (error) {
       setServerError(error.message || 'Unable to sign in. Please try again.');
     } finally {
@@ -54,9 +77,9 @@ const LoginPage = () => {
 
   return (
     <AuthLayout
-      eyebrow="Sign in"
-      title="Welcome back to your interview workspace."
-      description="Log in with your verified account to continue sessions, review feedback, and keep your workspace in sync."
+      eyebrow={displayEyebrow}
+      title={displayTitle}
+      description={displayDesc}
       actionLink={{ to: signupUrl, label: 'Create account' }}
     >
       <form onSubmit={handleSubmit} className="space-y-4">

@@ -558,7 +558,7 @@ def api_submit_answer(
         raise HTTPException(status_code=500, detail=f"Error submitting answer: {str(e)}")
 
 @app.post("/api/execute-code")
-async def api_execute_code(request: Request):
+async def api_execute_code(request: Request, current_user: User = Depends(get_current_user)):
     try:
         payload = await request.json()
         req = urllib.request.Request(
@@ -587,7 +587,7 @@ async def api_interview_report(session_id: str, current_user: User = Depends(get
         raise HTTPException(status_code=500, detail=f"Error generating report: {str(e)}")
 
 @app.post("/api/check-ats")
-def api_check_ats(request: ATSRequest):
+def api_check_ats(request: ATSRequest, current_user: User = Depends(get_current_user)):
     try:
         result = check_ats_score(request.resume_text, request.job_description)
         return result
@@ -595,7 +595,7 @@ def api_check_ats(request: ATSRequest):
         raise HTTPException(status_code=500, detail=f"Error checking ATS: {str(e)}")
 
 @app.post("/api/ats-recheck")
-def api_ats_recheck(request: ATSRequest):
+def api_ats_recheck(request: ATSRequest, current_user: User = Depends(get_current_user)):
     """Lighter weight recheck for the live editor."""
     try:
         result = check_ats_score(request.resume_text, request.job_description)
@@ -604,7 +604,7 @@ def api_ats_recheck(request: ATSRequest):
         raise HTTPException(status_code=500, detail=f"Error rechecking ATS: {str(e)}")
 
 @app.post("/api/ml/resume-job-match")
-def api_ml_resume_job_match(request: MLMatchRequest):
+def api_ml_resume_job_match(request: MLMatchRequest, current_user: User = Depends(get_current_user)):
     """
     ML Resume-Job Domain Matching prediction endpoint using fine-tuned DistilBERT / baseline model.
     Predicts whether resume and job description belong to the same professional domain.
@@ -617,12 +617,14 @@ def api_ml_resume_job_match(request: MLMatchRequest):
         raise HTTPException(status_code=500, detail=f"Error in ML resume-job match model: {str(e)}")
 
 @app.get("/api/interview/{session_id}/coding-question")
-def get_session_coding_question_endpoint(session_id: str, db: Session = Depends(get_db)):
+def get_session_coding_question_endpoint(session_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     from modules.coding_question_service import select_coding_question, get_question_by_id
     from models import InterviewSession, Question
     import re
 
     session = db.query(InterviewSession).filter(InterviewSession.id == session_id).first()
+    if not session or session.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Session not found or forbidden.")
 
     coding_q = None
     if session:
@@ -654,7 +656,11 @@ def get_session_coding_question_endpoint(session_id: str, db: Session = Depends(
     }
 
 @app.post("/api/interview/{session_id}/run-code")
-def run_code_endpoint(session_id: str, request: RunCodeRequest):
+def run_code_endpoint(session_id: str, request: RunCodeRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    from models import InterviewSession
+    session = db.query(InterviewSession).filter(InterviewSession.id == session_id).first()
+    if not session or session.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Session not found or forbidden.")
     from modules.coding_question_service import get_question_by_id
     from modules.code_evaluator import execute_test_cases
 
