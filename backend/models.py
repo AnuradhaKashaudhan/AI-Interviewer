@@ -223,3 +223,48 @@ class AuditLog(Base):
 
     user = relationship("User", back_populates="audit_logs")
 
+
+class CareerIntelligenceReport(Base):
+    __tablename__ = "career_intelligence_reports"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False, index=True)
+    target_role = Column(String, nullable=False)
+    report_data = Column(JSON, nullable=False)
+    data_sources_used = Column(JSON, nullable=True)
+    confidence_score = Column(Float, default=0.0)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User", backref="career_intelligence_reports")
+
+class SystemDesignSession(Base):
+    __tablename__ = "system_design_sessions"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False, index=True)
+    topic = Column(String, nullable=False)
+    difficulty = Column(String, nullable=False)
+    scenario = Column(Text, nullable=True)
+    requirements = Column(JSON, nullable=True)
+    overall_score = Column(Float, nullable=True)
+    status = Column(String, default="in_progress")
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User", backref="system_design_sessions")
+    attempts = relationship("SystemDesignAttempt", back_populates="session", cascade="all, delete")
+
+class SystemDesignAttempt(Base):
+    __tablename__ = "system_design_attempts"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    session_id = Column(String, ForeignKey("system_design_sessions.id"), nullable=False)
+    candidate_response = Column(Text, nullable=False)
+    dimension_scores = Column(JSON, nullable=True) # Architecture, Scalability, etc.
+    feedback = Column(JSON, nullable=True)
+    covered_concepts = Column(JSON, nullable=True)
+    missing_concepts = Column(JSON, nullable=True)
+    technical_errors = Column(JSON, nullable=True)
+    evidence_references = Column(JSON, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    session = relationship("SystemDesignSession", back_populates="attempts")

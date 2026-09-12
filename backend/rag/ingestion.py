@@ -9,7 +9,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from backend.rag.config import (
+from rag.config import (
     KNOWLEDGE_BASE_DIR,
     FAISS_INDEX_PATH,
     METADATA_STORE_PATH,
@@ -17,10 +17,10 @@ from backend.rag.config import (
     RAG_CHUNK_SIZE,
     RAG_CHUNK_OVERLAP,
 )
-from backend.rag.document_loader import DocumentLoader, compute_file_hash
-from backend.rag.chunker import TextChunker
-from backend.rag.embeddings import RAGEmbeddings
-from backend.rag.vector_store import FAISSVectorStore
+from rag.document_loader import DocumentLoader, compute_file_hash
+from rag.chunker import TextChunker
+from rag.embeddings import RAGEmbeddings
+from rag.vector_store import FAISSVectorStore
 
 def run_ingestion(force_rebuild: bool = False):
     """Executes full RAG document ingestion pipeline."""

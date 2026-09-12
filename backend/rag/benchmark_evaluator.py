@@ -10,19 +10,19 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from backend.rag.config import FAISS_INDEX_PATH, METADATA_STORE_PATH
-from backend.rag.embeddings import RAGEmbeddings
-from backend.rag.vector_store import FAISSVectorStore
-from backend.rag.retriever import RAGRetriever
-from backend.rag.reranker import RAGReranker
-from backend.rag.context_builder import ContextBuilder
-from backend.rag.schemas import RetrievalResult
-from backend.modules.question_generator import (
+from rag.config import FAISS_INDEX_PATH, METADATA_STORE_PATH
+from rag.embeddings import RAGEmbeddings
+from rag.vector_store import FAISSVectorStore
+from rag.retriever import RAGRetriever
+from rag.reranker import RAGReranker
+from rag.context_builder import ContextBuilder
+from rag.schemas import RetrievalResult
+from modules.question_generator import (
     generate_rag_grounded_question,
     validate_question_grounding,
     is_semantically_similar
 )
-from backend.modules.answer_evaluator import (
+from modules.answer_evaluator import (
     evaluate_answer,
     extract_concept_coverage,
     detect_technical_errors
@@ -92,7 +92,7 @@ def run_rag_benchmark():
 
     if not vector_store.is_available():
         print("[ERROR] FAISS index unavailable. Rebuilding...")
-        from backend.rag.indexer import FAISSIndexer
+        from rag.indexer import FAISSIndexer
         indexer = FAISSIndexer()
         indexer.rebuild_index(force_rebuild=True)
         vector_store.load_index()

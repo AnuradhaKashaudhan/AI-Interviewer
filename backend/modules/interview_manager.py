@@ -355,8 +355,8 @@ def build_evidence_details(evidence_ids: list, retrieval_scores: list, default_t
             from rag.vector_store import FAISSVectorStore
             from rag.config import FAISS_INDEX_PATH, METADATA_STORE_PATH
         except ImportError:
-            from backend.rag.vector_store import FAISSVectorStore
-            from backend.rag.config import FAISS_INDEX_PATH, METADATA_STORE_PATH
+            from rag.vector_store import FAISSVectorStore
+            from rag.config import FAISS_INDEX_PATH, METADATA_STORE_PATH
         
         vector_store = FAISSVectorStore(index_path=FAISS_INDEX_PATH, metadata_path=METADATA_STORE_PATH)
         meta_lookup = {}

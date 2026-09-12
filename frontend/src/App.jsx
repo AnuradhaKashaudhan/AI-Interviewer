@@ -10,6 +10,9 @@ import FeaturesPage from './pages/FeaturesPage.jsx';
 import ATSCheckerPage from './pages/ATSCheckerPage.jsx';
 import ATSFixItPage from './pages/ATSFixItPage.jsx';
 import CodingProfilePage from './pages/CodingProfilePage.jsx';
+import CareerIntelligencePage from './pages/CareerIntelligencePage.jsx';
+import SystemDesignPage from './pages/SystemDesignPage.jsx';
+import SystemDesignDrillPage from './pages/SystemDesignDrillPage.jsx';
 import PricingPage from './pages/PricingPage.jsx';
 import SupportPage from './pages/SupportPage.jsx';
 import ProfilePage from './pages/ProfilePage.jsx';
@@ -42,6 +45,9 @@ function App() {
             <Route path="/ats-checker" element={<ProtectedRoute featureName="ATS Checker"><ATSCheckerPage /></ProtectedRoute>} />
             <Route path="/ats-checker/fix" element={<ProtectedRoute featureName="ATS Checker"><ATSFixItPage /></ProtectedRoute>} />
             <Route path="/coding-profile" element={<ProtectedRoute featureName="Coding Profile"><CodingProfilePage /></ProtectedRoute>} />
+            <Route path="/career-intelligence" element={<ProtectedRoute featureName="AI Career Intelligence"><CareerIntelligencePage /></ProtectedRoute>} />
+            <Route path="/system-design" element={<ProtectedRoute featureName="System Design"><SystemDesignPage /></ProtectedRoute>} />
+            <Route path="/system-design/drill/:sessionId" element={<ProtectedRoute featureName="System Design"><SystemDesignDrillPage /></ProtectedRoute>} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/interview/new" element={<ProtectedRoute featureName="Mock Interview"><InterviewSetupPage /></ProtectedRoute>} />

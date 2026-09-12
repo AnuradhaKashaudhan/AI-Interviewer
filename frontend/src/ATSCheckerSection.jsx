@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     FileSearch,
@@ -18,6 +18,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import ATSParsingSequence from './components/ats/ATSParsingSequence.jsx';
 import { buildApiUrl } from './utils/apiConfig.js';
+import { apiFetch } from './services/authApi.js';
 import { useATS } from './context/ATSContext.jsx';
 
 const ATSCheckerSection = () => {
@@ -102,7 +103,7 @@ const ATSCheckerSection = () => {
 
         try {
             const [atsResponse, mlResponse] = await Promise.all([
-                fetch(buildApiUrl('/api/check-ats'), {
+                apiFetch('/api/check-ats', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -110,7 +111,7 @@ const ATSCheckerSection = () => {
                         job_description: jobDescription
                     })
                 }),
-                fetch(buildApiUrl('/api/ml/resume-job-match'), {
+                apiFetch('/api/ml/resume-job-match', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({

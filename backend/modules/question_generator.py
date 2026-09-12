@@ -303,7 +303,7 @@ def is_semantically_similar(new_question: str, asked_questions: list, threshold:
         try:
             from rag.embeddings import RAGEmbeddings
         except ImportError:
-            from backend.rag.embeddings import RAGEmbeddings
+            from rag.embeddings import RAGEmbeddings
 
         embedder = RAGEmbeddings()
         new_vec = embedder.embed_query(new_question.strip())
@@ -344,7 +344,7 @@ def validate_question_grounding(question_text: str, context_text: str, threshold
         try:
             from rag.embeddings import RAGEmbeddings
         except ImportError:
-            from backend.rag.embeddings import RAGEmbeddings
+            from rag.embeddings import RAGEmbeddings
 
         embedder = RAGEmbeddings()
         q_vec = embedder.embed_query(question_text.strip())
@@ -396,7 +396,7 @@ def generate_rag_grounded_question(
         try:
             from rag import get_rag_service
         except ImportError:
-            from backend.rag import get_rag_service
+            from rag import get_rag_service
 
         rag_service = get_rag_service()
         retrievals, diagnostics = rag_service.retrieve_with_diagnostics(

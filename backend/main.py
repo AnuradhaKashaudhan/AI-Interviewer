@@ -17,6 +17,8 @@ if env_path.exists():
 else:
     load_dotenv()
 
+
+
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 import jwt
@@ -90,6 +92,8 @@ from services.audit_service import get_user_audit_logs
 
 # Import routers
 from routers.coding_profile import router as coding_profile_router
+from routers.career_intelligence import router as career_intelligence_router
+from routers import system_design
 from ml.predictor import get_predictor
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -195,6 +199,8 @@ app.mount("/data", StaticFiles(directory=BASE_DIR / "data"), name="data")
 
 # Register routers
 app.include_router(coding_profile_router)
+app.include_router(career_intelligence_router)
+app.include_router(system_design.router, prefix="/api")
 
 @app.get("/")
 def read_root():

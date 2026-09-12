@@ -1,4 +1,4 @@
-from backend.modules.resume_parser import detect_coding_round_recommendation
+from modules.resume_parser import detect_coding_round_recommendation
 
 
 def test_detects_programming_signal_from_resume_and_role():

@@ -3,6 +3,7 @@ import torch
 import numpy as np
 from typing import List, Union
 from sentence_transformers import SentenceTransformer
+import threading
 from .config import RAG_EMBEDDING_MODEL
 
 # Optimize PyTorch CPU threading
@@ -11,13 +12,16 @@ torch.set_num_threads(min(os.cpu_count() or 4, 4))
 class RAGEmbeddings:
     _instance = None
     _model = None
+    _lock = threading.Lock()
 
     def __new__(cls, model_name: str = RAG_EMBEDDING_MODEL):
         if cls._instance is None:
-            cls._instance = super(RAGEmbeddings, cls).__new__(cls)
-            cls._model_name = model_name
-            print(f"[RAGEmbeddings] Initializing RAG embedding model: {cls._model_name}")
-            cls._model = SentenceTransformer(cls._model_name, device="cpu")
+            with cls._lock:
+                if cls._instance is None:
+                    cls._model_name = model_name
+                    print(f"[RAGEmbeddings] Initializing RAG embedding model: {cls._model_name}")
+                    cls._model = SentenceTransformer(cls._model_name, device="cpu")
+                    cls._instance = super(RAGEmbeddings, cls).__new__(cls)
         return cls._instance
 
     @property

@@ -36,7 +36,7 @@ class RAGMLScorer:
     def get_embedder(self):
         if self._embedder is None:
             try:
-                from backend.rag.embeddings import RAGEmbeddings
+                from rag.embeddings import RAGEmbeddings
                 self._embedder = RAGEmbeddings()
             except Exception:
                 try:

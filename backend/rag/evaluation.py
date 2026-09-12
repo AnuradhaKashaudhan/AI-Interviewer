@@ -7,10 +7,10 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from backend.rag.config import FAISS_INDEX_PATH, METADATA_STORE_PATH
-from backend.rag.embeddings import RAGEmbeddings
-from backend.rag.vector_store import FAISSVectorStore
-from backend.rag.retriever import RAGRetriever
+from rag.config import FAISS_INDEX_PATH, METADATA_STORE_PATH
+from rag.embeddings import RAGEmbeddings
+from rag.vector_store import FAISSVectorStore
+from rag.retriever import RAGRetriever
 
 BENCHMARK_QUERIES = [
     {

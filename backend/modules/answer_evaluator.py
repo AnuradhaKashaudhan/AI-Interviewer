@@ -175,7 +175,7 @@ def evaluate_answer(
         try:
             from rag import get_rag_service
         except ImportError:
-            from backend.rag import get_rag_service
+            from rag import get_rag_service
 
         rag_service = get_rag_service()
         retrievals, _ = rag_service.retrieve_with_diagnostics(
@@ -217,7 +217,7 @@ def evaluate_answer(
     try:
         from rag.scoring import RAGMLScorer
     except ImportError:
-        from backend.rag.scoring import RAGMLScorer
+        from rag.scoring import RAGMLScorer
 
     scorer = RAGMLScorer()
     ml_eval = scorer.calculate_ml_scores(
