@@ -38,22 +38,22 @@ function App() {
             <Route path="/support" element={<SupportPage />} />
             
             {/* Protected Routes inside AppShell */}
-            <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-            <Route path="/ats-checker" element={<ProtectedRoute><ATSCheckerPage /></ProtectedRoute>} />
-            <Route path="/ats-checker/fix" element={<ProtectedRoute><ATSFixItPage /></ProtectedRoute>} />
-            <Route path="/coding-profile" element={<ProtectedRoute><CodingProfilePage /></ProtectedRoute>} />
-            <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-            <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-            <Route path="/interview/new" element={<ProtectedRoute><InterviewSetupPage /></ProtectedRoute>} />
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/ats-checker" element={<ProtectedRoute featureName="ATS Checker"><ATSCheckerPage /></ProtectedRoute>} />
+            <Route path="/ats-checker/fix" element={<ProtectedRoute featureName="ATS Checker"><ATSFixItPage /></ProtectedRoute>} />
+            <Route path="/coding-profile" element={<ProtectedRoute featureName="Coding Profile"><CodingProfilePage /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/interview/new" element={<ProtectedRoute featureName="Mock Interview"><InterviewSetupPage /></ProtectedRoute>} />
             
             {/* Razorpay & Billing Protected Routes */}
-            <Route path="/upgrade" element={<ProtectedRoute><UpgradePage /></ProtectedRoute>} />
-            <Route path="/payment/success" element={<ProtectedRoute><PaymentSuccessPage /></ProtectedRoute>} />
-            <Route path="/payment/failed" element={<ProtectedRoute><PaymentFailedPage /></ProtectedRoute>} />
-            <Route path="/billing" element={<ProtectedRoute><BillingPage /></ProtectedRoute>} />
+            <Route path="/upgrade" element={<UpgradePage />} />
+            <Route path="/payment/success" element={<PaymentSuccessPage />} />
+            <Route path="/payment/failed" element={<PaymentFailedPage />} />
+            <Route path="/billing" element={<BillingPage />} />
           </Route>
           {/* Protected Routes outside AppShell */}
-          <Route path="/interview" element={<ProtectedRoute><InterviewPage /></ProtectedRoute>} />
+          <Route path="/interview" element={<ProtectedRoute featureName="Mock Interview"><InterviewPage /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </ErrorBoundary>

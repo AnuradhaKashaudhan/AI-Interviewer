@@ -42,6 +42,7 @@ const ATSCheckerSection = () => {
 
     const fileInputRef = useRef(null);
     const navigate = useNavigate();
+    const [limitModalData, setLimitModalData] = useState(null);
 
     const handleFileUpload = async (e) => {
         const file = e.target.files[0];
@@ -122,7 +123,17 @@ const ATSCheckerSection = () => {
                 })
             ]);
 
-            if (!atsResponse.ok) throw new Error("ATS Check failed");
+            if (!atsResponse.ok) {
+                const errData = await atsResponse.json().catch(() => ({}));
+                if (atsResponse.status === 403) {
+                    setLimitModalData({
+                        title: errData.detail?.includes("Free") ? "Free ATS limit reached" : "Pro ATS limit reached",
+                        description: errData.detail || "You have used all ATS checks included in your plan.",
+                    });
+                    throw new Error("LIMIT_REACHED");
+                }
+                throw new Error("ATS Check failed");
+            }
 
             const atsData = await atsResponse.json();
             let mlData = null;
@@ -133,7 +144,9 @@ const ATSCheckerSection = () => {
 
             setAtsResultsData(atsData, mlData, 'parsing');
         } catch (err) {
-            setError("ATS Analysis failed. Please try again.");
+            if (err.message !== "LIMIT_REACHED") {
+                setError("ATS Analysis failed. Please try again.");
+            }
             console.error(err);
             updatePhase("idle");
         } finally {
@@ -146,6 +159,27 @@ const ATSCheckerSection = () => {
 
     return (
         <section id="ats-checker" className="container pt-24 pb-32">
+            {/* Limit Reached Modal */}
+            {limitModalData && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
+                    <div className="w-full max-w-md rounded-[28px] border border-stone-200 bg-white p-6 shadow-2xl text-center">
+                        <AlertCircle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
+                        <h3 className="font-display text-2xl font-bold text-slate-900 mb-2">{limitModalData.title}</h3>
+                        <p className="text-slate-600 text-sm mb-6">{limitModalData.description}</p>
+                        <div className="flex flex-col gap-3">
+                            <button onClick={() => navigate('/pricing')} className="rounded-full bg-[#16324f] px-5 py-3 text-sm font-bold text-white hover:bg-[#0f2438]">
+                                Upgrade to Pro
+                            </button>
+                            <button onClick={() => navigate('/pricing')} className="rounded-full border border-[#16324f] px-5 py-3 text-sm font-bold text-[#16324f] hover:bg-stone-50">
+                                Upgrade to Advanced
+                            </button>
+                            <button onClick={() => setLimitModalData(null)} className="text-xs text-slate-500 mt-2 hover:underline">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
             <div className="text-center mb-16">
                 <h2 className="text-3xl md:text-4xl font-extrabold mb-4 tracking-tight">
                     ATS <span className="text-gradient">Resume Analysis</span>

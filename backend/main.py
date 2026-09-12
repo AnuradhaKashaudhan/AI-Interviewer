@@ -420,6 +420,10 @@ def analyze_answer(request: AnswerRequest, db: Session = Depends(get_db)):
 @app.post("/api/start-interview")
 def api_start_interview(request: StartInterviewRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
+        entitlements = get_user_entitlements(db, current_user.id)
+        if entitlements["sessions_remaining"] == 0:
+            raise HTTPException(status_code=403, detail={"detail": "Mock Interview limit reached. Please upgrade your plan.", "code": "UPGRADE_REQUIRED"})
+
         coding_recommendation = detect_coding_round_recommendation(
             resume_text=request.resume_text,
             role=request.role,
@@ -587,32 +591,58 @@ async def api_interview_report(session_id: str, current_user: User = Depends(get
         raise HTTPException(status_code=500, detail=f"Error generating report: {str(e)}")
 
 @app.post("/api/check-ats")
-def api_check_ats(request: ATSRequest, current_user: User = Depends(get_current_user)):
+def api_check_ats(request: ATSRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
+        entitlements = get_user_entitlements(db, current_user.id)
+        if entitlements["ats_remaining"] == 0:
+            raise HTTPException(status_code=403, detail={"detail": "ATS check limit reached. Please upgrade your plan.", "code": "UPGRADE_REQUIRED"})
+
         result = check_ats_score(request.resume_text, request.job_description)
+        
+        from services.audit_service import log_audit_event
+        log_audit_event(db, action="ATS_CHECK_PERFORMED", category="AI", user_id=current_user.id)
+        
         return result
+    except HTTPException as he:
+        raise he
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error checking ATS: {str(e)}")
 
 @app.post("/api/ats-recheck")
-def api_ats_recheck(request: ATSRequest, current_user: User = Depends(get_current_user)):
+def api_ats_recheck(request: ATSRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Lighter weight recheck for the live editor."""
     try:
+        entitlements = get_user_entitlements(db, current_user.id)
+        if entitlements["ats_remaining"] == 0:
+            raise HTTPException(status_code=403, detail={"detail": "ATS check limit reached. Please upgrade your plan.", "code": "UPGRADE_REQUIRED"})
+
         result = check_ats_score(request.resume_text, request.job_description)
+        
+        from services.audit_service import log_audit_event
+        log_audit_event(db, action="ATS_CHECK_PERFORMED", category="AI", user_id=current_user.id)
+        
         return result
+    except HTTPException as he:
+        raise he
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error rechecking ATS: {str(e)}")
 
 @app.post("/api/ml/resume-job-match")
-def api_ml_resume_job_match(request: MLMatchRequest, current_user: User = Depends(get_current_user)):
+def api_ml_resume_job_match(request: MLMatchRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """
     ML Resume-Job Domain Matching prediction endpoint using fine-tuned DistilBERT / baseline model.
     Predicts whether resume and job description belong to the same professional domain.
     """
     try:
+        entitlements = get_user_entitlements(db, current_user.id)
+        if not entitlements.get("ai_career_intelligence"):
+            raise HTTPException(status_code=403, detail={"detail": "AI Career Intelligence is not available on your current plan.", "code": "UPGRADE_REQUIRED"})
+
         predictor = get_predictor()
         result = predictor.predict(request.resume_text, request.job_description)
         return result
+    except HTTPException as he:
+        raise he
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error in ML resume-job match model: {str(e)}")
 
@@ -848,6 +878,9 @@ def get_latest_recommendation_endpoint(current_user: User = Depends(get_current_
 
 @app.get("/api/audit-logs")
 def get_audit_logs_endpoint(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    entitlements = get_user_entitlements(db, current_user.id)
+    if not entitlements.get("audit_logs"):
+        raise HTTPException(status_code=403, detail={"detail": "Audit logs are not available on your current plan.", "code": "UPGRADE_REQUIRED"})
     return {"logs": get_user_audit_logs(db, current_user.id)}
 
 

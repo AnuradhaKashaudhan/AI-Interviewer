@@ -195,6 +195,7 @@ const InterviewPage = () => {
     const [codingOutput, setCodingOutput] = useState('');
     const [codingExecutionLoading, setCodingExecutionLoading] = useState(false);
     const [codingSubmitLoading, setCodingSubmitLoading] = useState(false);
+    const [limitModalData, setLimitModalData] = useState(null);
 
     useEffect(() => {
         if (!interviewSetup) return;
@@ -765,6 +766,23 @@ const InterviewPage = () => {
                     resume_text: profileText
                 })
             });
+
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                if (response.status === 403) {
+                    setLimitModalData({
+                        title: "Mock Interview limit reached",
+                        description: errData.detail || "You have used all Mock Interviews included in your plan."
+                    });
+                    setInterviewStarted(false);
+                    stopScreenShare();
+                    setLoading(false);
+                    setLoadingStatus("");
+                    return;
+                }
+                throw new Error("Failed to start interview");
+            }
+
             const data = await response.json();
             if (data.session_id) {
                 setSessionId(data.session_id);
@@ -1234,6 +1252,27 @@ const InterviewPage = () => {
     // MAIN LIVE INTERVIEW EXPERIENCE
     return (
         <div className="h-screen w-screen max-w-full bg-[#f8f4ec] text-slate-900 overflow-hidden flex flex-col relative select-none">
+            {/* Limit Reached Modal */}
+            {limitModalData && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
+                    <div className="w-full max-w-md rounded-[28px] border border-stone-200 bg-white p-6 shadow-2xl text-center">
+                        <AlertCircle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
+                        <h3 className="font-display text-2xl font-bold text-slate-900 mb-2">{limitModalData.title}</h3>
+                        <p className="text-slate-600 text-sm mb-6">{limitModalData.description}</p>
+                        <div className="flex flex-col gap-3">
+                            <button onClick={() => navigate('/pricing')} className="rounded-full bg-[#16324f] px-5 py-3 text-sm font-bold text-white hover:bg-[#0f2438]">
+                                Upgrade to Pro
+                            </button>
+                            <button onClick={() => navigate('/pricing')} className="rounded-full border border-[#16324f] px-5 py-3 text-sm font-bold text-[#16324f] hover:bg-stone-50">
+                                Upgrade to Advanced
+                            </button>
+                            <button onClick={() => { setLimitModalData(null); navigate('/'); }} className="text-xs text-slate-500 mt-2 hover:underline">
+                                Back to Dashboard
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
             {/* Top Fixed Status Header Row */}
             <header className="h-16 w-full px-6 bg-white/90 backdrop-blur-md border-b border-stone-200 flex items-center justify-between flex-shrink-0 z-20">
                 <button onClick={() => navigate('/')} className="flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors font-medium text-sm">

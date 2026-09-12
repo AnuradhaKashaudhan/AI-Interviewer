@@ -458,11 +458,11 @@ TASK & GENERATION REQUIREMENTS:
             return gemini_client.generate_content(prompt)
 
         for attempt in range(2):
+            executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
             try:
                 # Add strict 12-second timeout per attempt to prevent hanging
-                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                    future = executor.submit(_call_gemini)
-                    response = future.result(timeout=12)
+                future = executor.submit(_call_gemini)
+                response = future.result(timeout=12)
 
                 cand_text = response.text.strip().strip('"').strip("'")
 
@@ -484,6 +484,8 @@ TASK & GENERATION REQUIREMENTS:
                 print(f"[RAG Generation] Attempt {attempt+1}: Timeout exceeded (12s).")
             except Exception as e:
                 print(f"[RAG Generation] Error generating Gemini question: {e}")
+            finally:
+                executor.shutdown(wait=False, cancel_futures=True)
 
     t_gen_end = time.time()
 

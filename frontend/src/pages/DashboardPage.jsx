@@ -19,6 +19,9 @@ import {
 import { useAuth } from '../context/AuthContext.jsx';
 import { getAuthToken } from '../services/authApi.js';
 import { buildApiUrl } from '../utils/apiConfig.js';
+import LoginRequiredModal from '../components/LoginRequiredModal.jsx';
+import LimitReachedModal from '../components/LimitReachedModal.jsx';
+import { AnimatePresence } from 'framer-motion';
 
 const DashboardPage = () => {
   const navigate = useNavigate();
@@ -31,6 +34,8 @@ const DashboardPage = () => {
   
   const [showExplainModal, setShowExplainModal] = useState(false);
   const [showAuditModal, setShowAuditModal] = useState(false);
+  const [loginRequiredFeature, setLoginRequiredFeature] = useState(null);
+  const [limitReachedFeature, setLimitReachedFeature] = useState(null);
   const [error, setError] = useState(null);
 
   const fetchDashboardData = async () => {
@@ -103,25 +108,50 @@ const DashboardPage = () => {
             <FileCode className="h-4 w-4 text-[#16324f]" />
             Audit Trail ({auditLogs.length})
           </button>
-          <Link
-            to="/interview/new"
+          <button
+            type="button"
+            onClick={() => {
+              if (!user) {
+                setLoginRequiredFeature('Mock Interview');
+                return;
+              }
+              if (entitlements?.sessions_remaining === 0) {
+                setLimitReachedFeature({ name: 'mock interviews', limit: entitlements.mock_interviews });
+                return;
+              }
+              navigate('/interview/new');
+            }}
             className="inline-flex items-center gap-2 rounded-full bg-[#16324f] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#0f2438]"
           >
             Start New Interview
             <ArrowRight className="h-4 w-4" />
-          </Link>
+          </button>
         </div>
       </div>
 
       {/* Snapshot Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-[24px] border border-stone-200 bg-white p-5">
           <div className="flex items-center justify-between text-slate-500">
-            <span className="text-xs uppercase tracking-[0.22em]">Sessions Completed</span>
+            <span className="text-xs uppercase tracking-[0.22em]">Mock Interviews</span>
             <CalendarDays className="h-4 w-4 text-[#16324f]" />
           </div>
-          <div className="mt-4 font-display text-4xl font-semibold text-slate-900">
-            {entitlements?.session_count || 3}
+          <div className="mt-4 font-display text-3xl font-semibold text-slate-900">
+            {entitlements?.mock_interviews === -1 
+              ? 'Unlimited' 
+              : `${entitlements?.session_count || 0} / ${entitlements?.mock_interviews || 1} used`}
+          </div>
+        </div>
+
+        <div className="rounded-[24px] border border-stone-200 bg-white p-5">
+          <div className="flex items-center justify-between text-slate-500">
+            <span className="text-xs uppercase tracking-[0.22em]">ATS Checks</span>
+            <FileCode className="h-4 w-4 text-[#16324f]" />
+          </div>
+          <div className="mt-4 font-display text-3xl font-semibold text-slate-900">
+            {entitlements?.ats_checks === -1 
+              ? 'Unlimited' 
+              : `${entitlements?.ats_count || 0} / ${entitlements?.ats_checks || 2} used`}
           </div>
         </div>
 
@@ -131,7 +161,7 @@ const DashboardPage = () => {
             <Brain className="h-4 w-4 text-[#8a5d2f]" />
           </div>
           <div className="mt-4 flex items-baseline gap-2">
-            <span className="font-display text-4xl font-semibold text-slate-900">{readinessScore}%</span>
+            <span className="font-display text-3xl font-semibold text-slate-900">{readinessScore}%</span>
             <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">Strong</span>
           </div>
         </div>
@@ -141,9 +171,9 @@ const DashboardPage = () => {
             <span className="text-xs uppercase tracking-[0.22em]">Plan Status</span>
             <ShieldCheck className="h-4 w-4 text-[#16324f]" />
           </div>
-          <div className="mt-4 font-display text-2xl font-bold text-slate-900 flex items-center gap-2">
+          <div className="mt-4 font-display text-xl font-bold text-slate-900 flex items-center gap-2">
             {entitlements?.plan_name || 'Free Plan'}
-            {isPro && <CheckCircle2 className="h-5 w-5 text-emerald-600" />}
+            {isPro && <CheckCircle2 className="h-4 w-4 text-emerald-600" />}
           </div>
         </div>
       </div>
@@ -248,7 +278,7 @@ const DashboardPage = () => {
                   onClick={() => navigate(`/upgrade?plan=${targetPlanId}`)}
                   className="flex w-full items-center justify-center gap-2 rounded-full bg-[#16324f] px-5 py-3 text-xs font-bold text-white transition hover:bg-[#0f2438]"
                 >
-                  <span>Get Started ({recommendation?.recommended_product?.price_inr ? `₹${recommendation.recommended_product.price_inr}` : '₹19'})</span>
+                  <span>Get Started ({recommendation?.recommended_product?.price_inr ? `₹${recommendation.recommended_product.price_inr}` : '₹199'})</span>
                   <ArrowRight className="h-4 w-4" />
                 </button>
               )}
@@ -355,6 +385,22 @@ const DashboardPage = () => {
           </div>
         </div>
       )}
+
+      <AnimatePresence>
+        {loginRequiredFeature && (
+          <LoginRequiredModal 
+            featureName={loginRequiredFeature} 
+            onClose={() => setLoginRequiredFeature(null)} 
+          />
+        )}
+        {limitReachedFeature && (
+          <LimitReachedModal
+            featureName={limitReachedFeature.name}
+            limit={limitReachedFeature.limit}
+            onClose={() => setLimitReachedFeature(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };

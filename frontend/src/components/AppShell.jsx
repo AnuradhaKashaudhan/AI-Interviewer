@@ -23,14 +23,16 @@ import {
   LogOut,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
+import LoginRequiredModal from './LoginRequiredModal.jsx';
+import LimitReachedModal from './LimitReachedModal.jsx';
 
 const navItems = [
-  { label: 'Dashboard', to: '/dashboard', icon: LayoutDashboard, protected: true },
+  { label: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
   { label: 'Features', to: '/features', icon: Sparkles },
   { label: 'ATS Checker', to: '/ats-checker', icon: SquarePen, protected: true },
   { label: 'Coding Profile', to: '/coding-profile', icon: Code2, protected: true },
   { label: 'Pricing', to: '/pricing', icon: CreditCard },
-  { label: 'Billing & History', to: '/billing', icon: Receipt, protected: true },
+  { label: 'Billing & History', to: '/billing', icon: Receipt },
   { label: 'Help & Support', to: '/support', icon: ShieldQuestion },
 ];
 
@@ -72,6 +74,8 @@ const AppShell = () => {
   const [demoOpen, setDemoOpen] = useState(false);
   const [signInOpen, setSignInOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [loginRequiredFeature, setLoginRequiredFeature] = useState(null);
+  const [limitReachedFeature, setLimitReachedFeature] = useState(null);
   const [authForm, setAuthForm] = useState({ name: '', email: '', password: '' });
 
   const pageTitle = useMemo(() => titleByPath[location.pathname] || 'CareerPilot AI', [location.pathname]);
@@ -112,7 +116,21 @@ const AppShell = () => {
                   <NavLink
                     key={item.to}
                     to={item.to}
-                    onClick={() => setMobileOpen(false)}
+                    onClick={(e) => {
+                      if (item.protected && !user) {
+                        e.preventDefault();
+                        setLoginRequiredFeature(item.label);
+                        setMobileOpen(false);
+                        return;
+                      }
+                      if (item.label === 'ATS Checker' && entitlements?.ats_remaining === 0) {
+                        e.preventDefault();
+                        setLimitReachedFeature({ name: 'ATS checks', limit: entitlements.ats_checks });
+                        setMobileOpen(false);
+                        return;
+                      }
+                      setMobileOpen(false);
+                    }}
                     className={({ isActive }) =>
                       `flex items-center gap-3 rounded-2xl border-l-2 px-3 py-3 transition focus:outline-none ${isActive
                         ? 'border-[#16324f] bg-[#16324f]/6 text-[#16324f]'
@@ -195,7 +213,17 @@ const AppShell = () => {
 
             <button
               type="button"
-              onClick={() => navigate('/interview/new')}
+              onClick={() => {
+                if (!user) {
+                  setLoginRequiredFeature('Mock Interview');
+                  return;
+                }
+                if (entitlements?.sessions_remaining === 0) {
+                  setLimitReachedFeature({ name: 'mock interviews', limit: entitlements.mock_interviews });
+                  return;
+                }
+                navigate('/interview/new');
+              }}
               className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#16324f] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#0f2438]"
             >
               Start Now
@@ -284,7 +312,21 @@ const AppShell = () => {
                     <NavLink
                       key={item.to}
                       to={item.to}
-                      onClick={() => setMobileOpen(false)}
+                      onClick={(e) => {
+                        if (item.protected && !user) {
+                          e.preventDefault();
+                          setLoginRequiredFeature(item.label);
+                          setMobileOpen(false);
+                          return;
+                        }
+                        if (item.label === 'ATS Checker' && entitlements?.ats_remaining === 0) {
+                          e.preventDefault();
+                          setLimitReachedFeature({ name: 'ATS checks', limit: entitlements.ats_checks });
+                          setMobileOpen(false);
+                          return;
+                        }
+                        setMobileOpen(false);
+                      }}
                       className={({ isActive }) =>
                         `flex items-center gap-3 rounded-2xl border-l-2 px-3 py-3 transition ${isActive
                           ? 'border-[#16324f] bg-[#16324f]/6 text-[#16324f]'
@@ -357,6 +399,16 @@ const AppShell = () => {
                 <button
                   type="button"
                   onClick={() => {
+                    if (!user) {
+                      setLoginRequiredFeature('Mock Interview');
+                      setMobileOpen(false);
+                      return;
+                    }
+                    if (entitlements?.sessions_remaining === 0) {
+                      setLimitReachedFeature({ name: 'mock interviews', limit: entitlements.mock_interviews });
+                      setMobileOpen(false);
+                      return;
+                    }
                     setMobileOpen(false);
                     navigate('/interview/new');
                   }}
@@ -474,6 +526,22 @@ const AppShell = () => {
               </div>
             </motion.form>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {loginRequiredFeature && (
+          <LoginRequiredModal 
+            featureName={loginRequiredFeature} 
+            onClose={() => setLoginRequiredFeature(null)} 
+          />
+        )}
+        {limitReachedFeature && (
+          <LimitReachedModal
+            featureName={limitReachedFeature.name}
+            limit={limitReachedFeature.limit}
+            onClose={() => setLimitReachedFeature(null)}
+          />
         )}
       </AnimatePresence>
     </div>

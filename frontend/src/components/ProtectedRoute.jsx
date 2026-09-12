@@ -1,24 +1,25 @@
 import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
+import LoginRequiredModal from './LoginRequiredModal.jsx';
 
-const ProtectedRoute = ({ children }) => {
+const ProtectedRoute = ({ children, featureName = "this feature" }) => {
   const { user, loading } = useAuth();
-  const location = useLocation();
-
+  
   if (loading) {
+    // Minimal short loading state during initial auth resolution. No large text.
     return (
-      <div className="flex h-64 w-full items-center justify-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin text-[#16324f]" />
-        <span className="ml-3 text-sm font-medium text-slate-600">Verifying authentication...</span>
+      <div className="flex h-screen w-full items-center justify-center p-8 bg-[radial-gradient(circle_at_top_left,_#fff9ef_0%,_#f7f1e7_44%,_#f0eadf_100%)]">
+        <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
       </div>
     );
   }
 
   if (!user) {
-    const destination = location.pathname + location.search;
-    return <Navigate to={`/login?redirect=${encodeURIComponent(destination)}`} replace />;
+    // Render the Login Required screen inline to block navigation and initialization
+    // without redirecting away from the intended route.
+    return <LoginRequiredModal featureName={featureName} />;
   }
 
   return children;

@@ -79,12 +79,15 @@ def get_user_entitlements(db: Session, user_id: Optional[str]) -> Dict[str, Any]
             "plan_id": "free",
             "plan_name": "Free Plan",
             "status": "guest",
-            "unlimited_interviews": False,
-            "advanced_ats": False,
-            "career_intelligence": False,
-            "custom_prep_packs": False,
+            "mock_interviews": 1,
+            "ats_checks": 2,
+            "ai_career_intelligence": False,
+            "system_design": False,
+            "audit_logs": False,
             "session_count": 0,
-            "sessions_remaining": 3
+            "sessions_remaining": 1,
+            "ats_count": 0,
+            "ats_remaining": 2
         }
 
     sub = get_user_active_subscription(db, user_id)
@@ -93,17 +96,29 @@ def get_user_entitlements(db: Session, user_id: Optional[str]) -> Dict[str, Any]
 
     # Calculate sessions conducted
     session_count = db.query(InterviewSession).filter(InterviewSession.user_id == user_id).count()
-    max_interviews = entitlements.get("max_interviews", 3)
-    remaining = -1 if max_interviews == -1 else max(0, max_interviews - session_count)
+    max_interviews = entitlements.get("mock_interviews", 1)
+    sessions_remaining = -1 if max_interviews == -1 else max(0, max_interviews - session_count)
+
+    # Calculate ATS checks conducted
+    from models import AuditLog
+    ats_count = db.query(AuditLog).filter(
+        AuditLog.user_id == user_id, 
+        AuditLog.action == "ATS_CHECK_PERFORMED"
+    ).count()
+    max_ats = entitlements.get("ats_checks", 2)
+    ats_remaining = -1 if max_ats == -1 else max(0, max_ats - ats_count)
 
     return {
         "plan_id": plan_info["id"],
         "plan_name": plan_info["name"],
         "status": sub.status,
-        "unlimited_interviews": entitlements.get("unlimited_interviews", False),
-        "advanced_ats": entitlements.get("advanced_ats", False),
-        "career_intelligence": entitlements.get("career_intelligence", False),
-        "custom_prep_packs": entitlements.get("custom_prep_packs", False),
+        "mock_interviews": entitlements.get("mock_interviews", 1),
+        "ats_checks": entitlements.get("ats_checks", 2),
+        "ai_career_intelligence": entitlements.get("ai_career_intelligence", False),
+        "system_design": entitlements.get("system_design", False),
+        "audit_logs": entitlements.get("audit_logs", False),
         "session_count": session_count,
-        "sessions_remaining": remaining
+        "sessions_remaining": sessions_remaining,
+        "ats_count": ats_count,
+        "ats_remaining": ats_remaining
     }

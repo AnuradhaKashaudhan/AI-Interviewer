@@ -45,18 +45,27 @@ const UpgradePage = () => {
           // Fallback if network fails
           setPlan({
             id: planId,
-            name: planId === 'advanced' ? 'AI Engineer Advanced Preparation' : 'Technical Interview Pack',
-            price_inr: planId === 'advanced' ? 99 : 19,
-            amount_paise: planId === 'advanced' ? 9900 : 1900,
+            name: planId === 'advanced' ? 'Advanced Plan' : 'Pro Plan',
+            price_inr: planId === 'advanced' ? 499 : 199,
+            amount_paise: planId === 'advanced' ? 49900 : 19900,
             currency: 'INR',
-            description: 'Adaptive follow-ups, detailed feedback, and AI Career Intelligence insights.',
-            features: [
-              'Unlimited mock interview sessions',
-              'Adaptive follow-up questions',
-              'Detailed AI feedback breakdown',
-              'Advanced ATS Fix-It analysis',
-              'Saved history & exports',
-            ],
+            description: planId === 'advanced' 
+              ? 'For candidates targeting senior AI, System Design, and Lead Engineering roles.' 
+              : 'For consistent preparation with stronger feedback loops and adaptive follow-ups.',
+            features: planId === 'advanced' 
+              ? [
+                  'Unlimited mock interview sessions',
+                  'Unlimited ATS checks',
+                  'Full Agentic AI Career Audit',
+                  'Unlimited System Design Drills',
+                  'Full Explainability (Audit Logs)',
+                ]
+              : [
+                  '5 mock interview sessions',
+                  '10 ATS checks',
+                  'Basic AI Career Intelligence',
+                  'Basic Audit Trail Logs',
+                ],
           });
         }
       } catch (err) {
