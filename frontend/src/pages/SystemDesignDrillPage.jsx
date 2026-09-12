@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { buildApiUrl } from '../utils/apiConfig';
 import { useAuth } from '../context/AuthContext';
 
 const SystemDesignDrillPage = () => {
@@ -19,11 +19,15 @@ const SystemDesignDrillPage = () => {
     if (!isAdvanced) return navigate('/system-design');
     
     if (sessionId && token) {
-      axios.get(`/api/system-design/session/${sessionId}`, {
+      fetch(buildApiUrl(`/api/system-design/session/${sessionId}`), {
         headers: { Authorization: `Bearer ${token}` }
       })
-      .then(res => {
-        setSession(res.data);
+      .then(async res => {
+        if (!res.ok) throw new Error("Failed to fetch session");
+        return res.json();
+      })
+      .then(data => {
+        setSession(data);
       })
       .catch(err => {
         console.error(err);
@@ -38,15 +42,25 @@ const SystemDesignDrillPage = () => {
     
     setLoading(true);
     try {
-      const res = await axios.post('/api/system-design/evaluate', {
-        session_id: sessionId,
-        candidate_response: response
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
+      const res = await fetch(buildApiUrl('/api/system-design/evaluate'), {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}` 
+        },
+        body: JSON.stringify({
+          session_id: sessionId,
+          candidate_response: response
+        })
       });
-      setFeedback(res.data.feedback);
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.detail || "Request failed");
+      }
+      const data = await res.json();
+      setFeedback(data.feedback);
     } catch (error) {
-      alert("Evaluation failed: " + (error.response?.data?.detail || error.message));
+      alert("Evaluation failed: " + error.message);
     } finally {
       setLoading(false);
     }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { buildApiUrl } from '../utils/apiConfig';
 import { useAuth } from '../context/AuthContext';
 
 const SystemDesignPage = () => {
@@ -12,11 +12,15 @@ const SystemDesignPage = () => {
 
   useEffect(() => {
     if (user) {
-      axios.get('/api/system-design/progress', {
+      fetch(buildApiUrl('/api/system-design/progress'), {
         headers: { Authorization: `Bearer ${token}` }
       })
-        .then(res => {
-          setProgress(res.data);
+        .then(async res => {
+          if (!res.ok) throw new Error("Failed to fetch progress");
+          return res.json();
+        })
+        .then(data => {
+          setProgress(data);
           setLoading(false);
         })
         .catch(err => {
@@ -36,13 +40,22 @@ const SystemDesignPage = () => {
     if (!isAdvanced) return;
     
     try {
-      const res = await axios.post('/api/system-design/start', 
-        { topic: topicId },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      navigate(`/system-design/drill/${res.data.session_id}`);
+      const res = await fetch(buildApiUrl('/api/system-design/start'), {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}` 
+        },
+        body: JSON.stringify({ topic: topicId })
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.detail || "Request failed");
+      }
+      const data = await res.json();
+      navigate(`/system-design/drill/${data.session_id}`);
     } catch (error) {
-      alert("Failed to start drill: " + (error.response?.data?.detail || error.message));
+      alert("Failed to start drill: " + error.message);
     }
   };
 
