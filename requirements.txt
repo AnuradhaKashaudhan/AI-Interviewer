@@ -26,3 +26,4 @@ langchain
 langchain-community
 langchain-core
 razorpay
+langchain-google-genai
