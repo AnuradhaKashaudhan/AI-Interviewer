@@ -3,7 +3,7 @@ import sys
 import json
 import logging
 from pathlib import Path
-import torch
+# import torch
 import numpy as np
 
 logger = logging.getLogger(__name__)
@@ -26,6 +26,7 @@ class ResumeDomainMatchPredictor:
         if self._initialized:
             return
 
+        import torch
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.sbert_model = None
         self.sbert_clf = None
