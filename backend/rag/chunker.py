@@ -1,5 +1,4 @@
 from typing import List
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 from .schemas import DocumentMetadata, ChunkSchema
 from .config import RAG_CHUNK_SIZE, RAG_CHUNK_OVERLAP
 
@@ -7,6 +6,10 @@ class TextChunker:
     def __init__(self, chunk_size: int = RAG_CHUNK_SIZE, chunk_overlap: int = RAG_CHUNK_OVERLAP):
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
+        
+        # Lazy load heavy text splitters to avoid stalling FastAPI startup
+        from langchain_text_splitters import RecursiveCharacterTextSplitter
+        
         self.splitter = RecursiveCharacterTextSplitter(
             chunk_size=self.chunk_size,
             chunk_overlap=self.chunk_overlap,

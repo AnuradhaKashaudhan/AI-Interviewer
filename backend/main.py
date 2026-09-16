@@ -99,6 +99,12 @@ from ml.predictor import get_predictor
 BASE_DIR = Path(__file__).resolve().parent
 app = FastAPI(title="CareerPilot AI API", description="API for CareerPilot AI — AI Mock Interviewer & ATS Optimization Coach")
 
+@app.get("/health")
+def health_check():
+    """Lightweight health check endpoint for deployment orchestration (Render)."""
+    return {"status": "healthy", "service": "careerpilot-api"}
+
+
 class SignupRequest(BaseModel):
     fullName: str
     email: str
